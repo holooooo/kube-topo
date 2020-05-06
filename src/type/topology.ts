@@ -1,3 +1,5 @@
+import { SimulationNodeDatum, SimulationLinkDatum } from "d3";
+
 export interface TopologyNodeType {
   name: string;
   icon: string;
@@ -34,7 +36,7 @@ export const workloadTypes: Set<TopologyNodeType> = new Set([
   TopologyNodeTypes.CronJob,
 ]);
 
-export interface TopologyNode {
+export interface TopologyNode extends SimulationNodeDatum {
   [key: string]: any;
   id: string;
   name: string;
@@ -52,7 +54,7 @@ export enum TopologyLinkType {
   Belong = "Belong",
 }
 
-export interface TopologyLink {
+export interface TopologyLink extends SimulationLinkDatum<TopologyNode> {
   source: string;
   target: string;
   type: TopologyLinkType;

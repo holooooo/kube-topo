@@ -1,14 +1,17 @@
 import React from "react";
 import Topology from "./Topology";
-import { StateStore } from "../type";
+import { StateStore, TopologyNode, TopologyLink } from "../type";
 import { connect } from "react-redux";
 import { parse } from "../core/parse";
 import { setDragging } from "../reducers/dragger";
+import { setLinks, setNodes } from "../reducers/topology";
 
 // tslint:disable-next-line:no-empty-interface
 interface Props {
   isDragging: boolean;
   setDragging: typeof setDragging;
+  setLinks: typeof setLinks;
+  setNodes: typeof setNodes;
 }
 class Dragger extends React.Component<Props> {
   drop: React.RefObject<any>;
@@ -77,12 +80,17 @@ class Dragger extends React.Component<Props> {
     e.target === this.drag.current && this.props.setDragging(false);
   };
 
+  saveToState = (nodes: TopologyNode[], links: TopologyLink[]) => {
+    this.props.setNodes(nodes);
+    this.props.setLinks(links);
+  };
+
   onUpload = (files: File[]) => {
     for (let file of files) {
       let fr = new FileReader();
       fr.readAsText(file);
       fr.onload = () => {
-        parse(fr.result as string);
+        parse(fr.result as string, this.saveToState);
       };
     }
   };
@@ -90,10 +98,10 @@ class Dragger extends React.Component<Props> {
   render() {
     return (
       <div ref={this.drop}>
-        <Topology />
+        <Topology height={800} width={1000} />
         {this.props.isDragging && (
           <div ref={this.drag}>
-            请放手
+            Drop it please
             <span role="img" aria-label="emoji">
               &#128541;
             </span>
@@ -112,7 +120,9 @@ const mapStateToProps = (state: StateStore) => {
 };
 
 const mapDispatchToProps = {
-  setDragging: setDragging,
+  setDragging,
+  setNodes,
+  setLinks,
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(Dragger);

@@ -6,7 +6,7 @@ export interface StatusState {
   isUploaded: boolean;
 }
 
-export interface TopologyNodesState {
+export interface TopologyState {
   links: TopologyLink[];
   nodes: TopologyNode[];
 }
@@ -17,6 +17,6 @@ export interface DraggerState {
 
 export interface StateStore {
   status: StatusState;
-  topologyNodes: TopologyNodesState;
+  topology: TopologyState;
   dragger: DraggerState;
 }

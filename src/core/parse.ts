@@ -5,6 +5,7 @@ import {
   TopologyLinkType,
   workloadTypes,
   TopologyNodeType,
+  TopologyLink,
 } from "../type";
 import { v4 as uuidv4 } from "uuid";
 
@@ -13,22 +14,30 @@ export let cache: {
   } = {},
   links: { [source: string]: { [target: string]: TopologyLinkType } };
 
-export const parse = (yamlFile: string) => {
+export const parse = (
+  yamlFile: string,
+  saveToState: (nodes: TopologyNode[], links: TopologyLink[]) => void
+) => {
   const yamlList = YAML.parseAllDocuments(yamlFile);
   initCache();
   handle([...yamlList.map((yaml) => yaml.toJSON())]);
-  console.log(cache);
-  console.log(links);
-  let refCount = 0,
-    belongCount = 0;
+
+  let nodesResult: TopologyNode[] = [] as TopologyNode[];
+  Object.values(cache["ObjType"]).forEach(
+    (list) => (nodesResult = nodesResult.concat(...list))
+  );
+  let linksResult: TopologyLink[] = [] as TopologyLink[];
   Object.keys(links).forEach((key) =>
     Object.keys(links[key]).forEach((k) =>
-      links[key][k] === TopologyLinkType.Belong ? belongCount++ : refCount++
+      linksResult.push({
+        source: key,
+        target: k,
+        type: links[key][k],
+      })
     )
   );
-  console.log(
-    "there are " + refCount + " ref link, and " + belongCount + " belong link"
-  );
+
+  saveToState(nodesResult, linksResult);
 };
 
 const handle = (yamls: { [key: string]: any }[]) => {
