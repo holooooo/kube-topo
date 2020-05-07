@@ -3,13 +3,19 @@ import Topology from "./Topology";
 import { StateStore, TopologyNode, TopologyLink } from "../type";
 import { connect } from "react-redux";
 import { parse } from "../core/parse";
-import { setDragging } from "../reducers/dragger";
+import { setDragging, setLoading } from "../reducers/dragger";
 import { setLinks, setNodes } from "../reducers/topology";
+import { Layout, Spin, Card, Row, Col, message } from "antd";
+
+const { Content } = Layout;
 
 // tslint:disable-next-line:no-empty-interface
 interface Props {
   isDragging: boolean;
+  nodes: TopologyNode[];
+  isLoading: boolean;
   setDragging: typeof setDragging;
+  setLoading: typeof setLoading;
   setLinks: typeof setLinks;
   setNodes: typeof setNodes;
 }
@@ -60,6 +66,7 @@ class Dragger extends React.Component<Props> {
           )
       )
     ) {
+      message.error("This is only support *.yml or *.yaml");
       return;
     }
 
@@ -81,12 +88,14 @@ class Dragger extends React.Component<Props> {
   };
 
   saveToState = (nodes: TopologyNode[], links: TopologyLink[]) => {
+    this.props.setLoading(false);
     this.props.setNodes(nodes);
     this.props.setLinks(links);
   };
 
   onUpload = (files: File[]) => {
     for (let file of files) {
+      this.props.setLoading(true);
       let fr = new FileReader();
       fr.readAsText(file);
       fr.onload = () => {
@@ -97,30 +106,51 @@ class Dragger extends React.Component<Props> {
 
   render() {
     return (
-      <div ref={this.drop}>
-        <Topology />
-        {this.props.isDragging && (
-          <div ref={this.drag}>
-            Drop it please
-            <span role="img" aria-label="emoji">
-              &#128541;
-            </span>
-          </div>
-        )}
-        {this.props.children}
-      </div>
+      <Layout>
+        <div ref={this.drop} className="FilesDragAndDrop">
+          <Content className={"container"}>
+            <Spin spinning={this.props.isLoading}>
+              {this.props.nodes.length === 0 && (
+                <Row>
+                  <Col span={12} offset={6}>
+                    <Card style={{ textAlign: "center" }}>
+                      <h2>Drop Your Yamls to Here</h2>
+                    </Card>
+                  </Col>
+                </Row>
+              )}
+              {this.props.nodes.length !== 0 && <Topology />}
+              {this.props.isDragging && (
+                <div
+                  ref={this.drag}
+                  className={"FilesDragAndDrop__placeholder"}
+                >
+                  Drop it please
+                  <span role="img" aria-label="emoji">
+                    &#128541;
+                  </span>
+                </div>
+              )}
+              {this.props.children}
+            </Spin>
+          </Content>
+        </div>
+      </Layout>
     );
   }
 }
 
 const mapStateToProps = (state: StateStore) => {
   return {
+    nodes: state.topology.nodes,
+    isLoading: state.dragger.isLoading,
     isDragging: state.dragger.isDragging,
   };
 };
 
 const mapDispatchToProps = {
   setDragging,
+  setLoading,
   setNodes,
   setLinks,
 };

@@ -13,6 +13,7 @@ export interface TopologyState {
 
 export interface DraggerState {
   isDragging: boolean;
+  isLoading: boolean;
 }
 
 export interface StateStore {

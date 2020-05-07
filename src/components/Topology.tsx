@@ -87,13 +87,13 @@ export class Topology extends React.Component<Props> {
     const config = {
       animate: true,
       container: this.graphRef.current,
-      width: 1000,
-      height: 600,
+      width: document.body.clientWidth - 25,
+      height: document.body.clientHeight - 25,
       fitView: true,
       layout: {
         type: "force",
-        linkDistance: 150,
-        nodeStrength: 1.5,
+        linkDistance: 200,
+        nodeStrength: -20,
         preventOverlap: true,
         sortBy: "degree",
         nodeSize: 32,
@@ -109,7 +109,7 @@ export class Topology extends React.Component<Props> {
         labelCfg: {
           style: {
             fill: "#1890ff",
-            fontSize: 14,
+            fontSize: 12,
             background: {
               fill: "#ffffff",
               stroke: "#9EC9FF",
@@ -172,9 +172,6 @@ export class Topology extends React.Component<Props> {
     this.renderGraph();
     return (
       <div style={style}>
-        {!(nodes.length > 0 || links.length > 0) && (
-          <p>Drag Some Yaml to Here</p>
-        )}
         {(nodes.length > 0 || links.length > 0) && (
           <div ref={this.graphRef}></div>
         )}

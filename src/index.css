@@ -5,12 +5,23 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: #ececec!important;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
+.container {
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0px;
+  bottom: 0px;
 }
+
+.minimap {
+  position: absolute;
+  bottom: 0px;
+  border: 2px solid gray;
+}
+
 .g6-tooltip {
   border: 1px solid #e2e2e2;
   border-radius: 4px;
@@ -19,4 +30,42 @@ code {
   background-color: rgba(255, 255, 255, 0.9);
   padding: 10px 8px;
   box-shadow: rgb(174, 174, 174) 0px 0px 10px;
+}
+
+.FilesDragAndDrop {
+  position: relative;
+}
+
+.FilesDragAndDrop__area {
+  width: 300px;
+  height: 200px;
+  padding: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-flow: column nowrap;
+  font-size: 24px;
+  color: #555555;
+  border: 2px #c3c3c3 dashed;
+  border-radius: 12px;
+}
+
+.FilesDragAndDrop__placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-flow: column nowrap;
+  background-color: #e7e7e7;
+  border-radius: 12px;
+  color: #7f8e99;
+  font-size: 24px;
+  opacity: 1;
+  text-align: center;
+  line-height: 1.4;
 }
