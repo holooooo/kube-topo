@@ -1,0 +1,53 @@
+name: master
+
+on:
+  push:
+      branches:
+      - master
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+
+    # node 编译
+    - name: GitHub Action for Yarn
+      uses: Borales/actions-yarn@v2.1.0
+      with:
+        # Yarn command
+        cmd: |
+          yarn install
+          yarn build
+
+    # docker build，并push
+    - name: Docker push
+      uses: azure/docker-login@v1
+      with:
+        login-server: reg.qiniu.com
+        username: ${{ secrets.REGISTRY_USERNAME }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+    - run: |
+        docker build -t reg.qiniu.com/holo-blog/topo:${{ github.sha }} -t reg.qiniu.com/holo-blog/topo .
+        docker push reg.qiniu.com/holo-blog/topo:${{ github.sha }}
+        docker push reg.qiniu.com/holo-blog/topo
+
+    # 让K8s应用deployment
+    - run: |
+        sed -i 's/{TAG}/${{ github.sha }}/g' deployment.yaml
+    - name: deploy to cluster
+      uses: steebchen/kubectl@master
+      env:
+        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+        KUBECTL_VERSION: "1.15"
+      with:
+        args: apply -f deployment.yaml
+    - name: verify deployment
+      uses: steebchen/kubectl@master
+      env:
+        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+        KUBECTL_VERSION: "1.15"
+      with:
+        args: '"rollout status -n blog deployment/topo"'
