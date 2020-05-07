@@ -98,7 +98,7 @@ class Dragger extends React.Component<Props> {
   render() {
     return (
       <div ref={this.drop}>
-        <Topology height={800} width={1000} />
+        <Topology />
         {this.props.isDragging && (
           <div ref={this.drag}>
             Drop it please

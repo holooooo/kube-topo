@@ -119,9 +119,6 @@ const findRelation = () => {
   topoNodeList.forEach((node) => {
     let referenceList: TopologyNode[] = [];
     let belongList: TopologyNode[] = [];
-    if (node.namespace) {
-      belongList.push(node.namespace);
-    }
     if (!node.detail || !node.namespace) {
       return;
     }
@@ -204,6 +201,7 @@ const findRelation = () => {
           )[0]
         );
       }
+      // TODO go on
     } else if (node.type === TopologyNodeTypes.PersistentVolume) {
     } else if (node.type === TopologyNodeTypes.PersistentVolumeClaim) {
     } else if (node.type === TopologyNodeTypes.Pod) {
