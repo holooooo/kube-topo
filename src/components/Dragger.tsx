@@ -4,8 +4,9 @@ import { StateStore, TopologyNode, TopologyLink } from "../type";
 import { connect } from "react-redux";
 import { parse } from "../core/parse";
 import { setDragging, setLoading } from "../reducers/dragger";
-import { setLinks, setNodes } from "../reducers/topology";
+import { setTopoDatas } from "../reducers/topology";
 import { Layout, Spin, Card, Row, Col, message } from "antd";
+import { GroupConfig } from "../../node_modules/@antv/g6/lib/types";
 
 const { Content } = Layout;
 
@@ -16,8 +17,7 @@ interface Props {
   isLoading: boolean;
   setDragging: typeof setDragging;
   setLoading: typeof setLoading;
-  setLinks: typeof setLinks;
-  setNodes: typeof setNodes;
+  setTopoDatas: typeof setTopoDatas;
 }
 class Dragger extends React.Component<Props> {
   drop: React.RefObject<any>;
@@ -87,10 +87,13 @@ class Dragger extends React.Component<Props> {
     e.target === this.drag.current && this.props.setDragging(false);
   };
 
-  saveToState = (nodes: TopologyNode[], links: TopologyLink[]) => {
+  saveToState = (
+    nodes: TopologyNode[],
+    links: TopologyLink[],
+    groups: GroupConfig[]
+  ) => {
     this.props.setLoading(false);
-    this.props.setNodes(nodes);
-    this.props.setLinks(links);
+    this.props.setTopoDatas({ nodes, links, groups });
   };
 
   onUpload = (files: File[]) => {
@@ -119,7 +122,7 @@ class Dragger extends React.Component<Props> {
                   </Col>
                 </Row>
               )}
-              {this.props.nodes.length !== 0 && <Topology />}
+              <Topology />
               {this.props.isDragging && (
                 <div
                   ref={this.drag}
@@ -131,7 +134,6 @@ class Dragger extends React.Component<Props> {
                   </span>
                 </div>
               )}
-              {this.props.children}
             </Spin>
           </Content>
         </div>
@@ -151,8 +153,7 @@ const mapStateToProps = (state: StateStore) => {
 const mapDispatchToProps = {
   setDragging,
   setLoading,
-  setNodes,
-  setLinks,
+  setTopoDatas,
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(Dragger);

@@ -1,3 +1,5 @@
+import { NodeConfig, EdgeConfig } from "../../node_modules/@antv/g6/lib/types";
+
 export interface TopologyNodeType {
   name: string;
   icon: string;
@@ -5,7 +7,7 @@ export interface TopologyNodeType {
 }
 export const TopologyNodeTypes: { [key: string]: TopologyNodeType } = {
   Pod: { name: "Pod", icon: "img/kubernetes/pod.svg", degree: 20 },
-  Namespace: { name: "Namespace", icon: "img/kubernetes/ns.svg", degree: 45 },
+  Namespace: { name: "Namespace", icon: "img/kubernetes/ns.svg", degree: 50 },
   Service: { name: "Service", icon: "img/kubernetes/svc.svg", degree: 10 },
   Ingress: { name: "Ingress", icon: "img/kubernetes/ing.svg", degree: 0 },
   PersistentVolume: {
@@ -22,7 +24,7 @@ export const TopologyNodeTypes: { [key: string]: TopologyNodeType } = {
   StorageClass: {
     name: "StorageClass",
     icon: "img/kubernetes/sc.svg",
-    degree: 0,
+    degree: 45,
   },
   Secret: { name: "Secret", icon: "img/kubernetes/secret.svg", degree: 25 },
   Endpoints: { name: "Endpoints", icon: "img/kubernetes/ep.svg", degree: 5 },
@@ -63,28 +65,29 @@ export const workloadTypes: Set<TopologyNodeType> = new Set([
   TopologyNodeTypes.CronJob,
 ]);
 
-export interface TopologyNode {
-  [key: string]: any;
+export interface TopologyNode extends NodeConfig {
   id: string;
   name: string;
-  type: TopologyNodeType;
   namespace?: TopologyNode;
   labels?: { [keys: string]: string };
   annotations?: { [keys: string]: string };
   resources?: Resources;
   selectors?: { [keys: string]: string };
+  nodeType: TopologyNodeType;
+  degree: number;
   detail?: { [key: string]: any };
+  [key: string]: any;
 }
 
 export enum TopologyLinkType {
   Reference = "#3498db",
-  Belong = "#e74c3c",
+  Belong = "#000",
 }
 
-export interface TopologyLink {
+export interface TopologyLink extends EdgeConfig {
   source: string;
   target: string;
-  type: TopologyLinkType;
+  color: TopologyLinkType;
 }
 export interface Resources {
   limit: { cpu: string; memory: string };

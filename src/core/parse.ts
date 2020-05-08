@@ -8,15 +8,21 @@ import {
   TopologyLink,
 } from "../type";
 import { v4 as uuidv4 } from "uuid";
+import { GroupConfig } from "../../node_modules/@antv/g6/lib/types";
 
 export let cache: {
     [key: string]: { [value: string]: Set<TopologyNode> };
   } = {},
-  links: { [source: string]: { [target: string]: TopologyLinkType } };
+  links: { [source: string]: { [target: string]: TopologyLinkType } },
+  groups: GroupConfig[] = [{ id: "cluster", title: "Cluster" }];
 
 export const parse = (
   yamlFile: string,
-  saveToState: (nodes: TopologyNode[], links: TopologyLink[]) => void
+  saveToState: (
+    nodes: TopologyNode[],
+    links: TopologyLink[],
+    groups: GroupConfig[]
+  ) => void
 ) => {
   const yamlList = YAML.parseAllDocuments(yamlFile);
   initCache();
@@ -32,12 +38,12 @@ export const parse = (
       linksResult.push({
         source: key,
         target: k,
-        type: links[key][k],
+        color: links[key][k],
       })
     )
   );
 
-  saveToState(nodesResult, linksResult);
+  saveToState(nodesResult, linksResult, groups);
 };
 
 const handle = (yamls: { [key: string]: any }[]) => {
@@ -67,32 +73,34 @@ const parseTopologyNode = (obj: { [key: string]: any }) => {
     obj.metadata.name,
     TopologyNodeTypes[obj.kind],
     obj.metadata.namespace || undefined
-  )[0] || {
+  )[0];
+  const temp = {
     id: uuidv4(),
-  };
-  const temp: TopologyNode = {
+    type: "image",
     name: obj.metadata.name,
+    label: fittingString(obj.metadata.name, 15),
     namespace: getFromCache(
       obj.metadata.namespace,
       TopologyNodeTypes.Namespace
     )[0],
     labels: (obj.metadata.labels as { [keys: string]: string }) || [],
+    img: TopologyNodeTypes[obj.kind].icon,
+    groupId:
+      getFromCache(obj.metadata.namespace, TopologyNodeTypes.Namespace)[0].id ||
+      "cluster",
+    degree: TopologyNodeTypes[obj.kind].degree,
     annotations: (obj.metadata.annotations as { [keys: string]: string }) || [],
-    type: TopologyNodeTypes[obj.kind],
+    nodeType: TopologyNodeTypes[obj.kind],
     detail: obj,
-  } as TopologyNode;
-  Object.keys(temp).forEach((k) => {
-    if (temp[k]) {
-      node[k] = temp[k];
-    }
-  });
+  };
+  node = node ? Object.assign(node, temp) : temp;
 
   // Special resource handling
-  if (workloadTypes.has(node.type)) {
+  if (workloadTypes.has(node.nodeType)) {
     node.selectors = obj.spec.selector.matchLabels as {
       [keys: string]: string;
     };
-  } else if (node.type.name === "service") {
+  } else if (node.nodeType === TopologyNodeTypes.Service) {
     node.selectors = obj.spec.selector as {
       [keys: string]: string;
     };
@@ -107,7 +115,7 @@ const parseTopologyNode = (obj: { [key: string]: any }) => {
       ).add(node);
     }
   }
-  cache.ObjType[node.type.name].add(node);
+  cache.ObjType[node.nodeType.name].add(node);
 };
 
 const findRelation = () => {
@@ -117,13 +125,22 @@ const findRelation = () => {
     (v) => (topoNodeList = topoNodeList.concat([...v]))
   );
   topoNodeList.forEach((node) => {
+    if (
+      node.nodeType === TopologyNodeTypes.Namespace &&
+      groups.filter((g) => g.id === node.id).length === 0
+    ) {
+      groups.push({ id: node.id, title: node.name });
+    }
+
     let referenceList: TopologyNode[] = [];
     let belongList: TopologyNode[] = [];
     if (!node.detail || !node.namespace) {
       return;
     }
 
-    if (workloadTypes.has(node.type)) {
+    // belongList.push(node.namespace);
+
+    if (workloadTypes.has(node.nodeType)) {
       // find cm ,secret and pvc volume
       if (node.detail.spec.template.spec.volumes) {
         const volumes = node.detail.spec.template.spec.volumes;
@@ -182,15 +199,15 @@ const findRelation = () => {
           );
         });
       }
-    } else if (node.type === TopologyNodeTypes.Service) {
+    } else if (node.nodeType === TopologyNodeTypes.Service) {
       if (node.detail.spec.selector && node.namespace) {
         const label = node.detail.spec.selector;
         const targets = matchLabel(label, node.namespace.name).filter((t) =>
-          workloadTypes.has(t.type)
+          workloadTypes.has(t.nodeType)
         );
         referenceList.push(...targets);
       }
-    } else if (node.type === TopologyNodeTypes.Ingress) {
+    } else if (node.nodeType === TopologyNodeTypes.Ingress) {
       const paths = node.detail.spec.paths;
       for (let path of paths) {
         referenceList.push(
@@ -202,12 +219,12 @@ const findRelation = () => {
         );
       }
       // TODO go on
-    } else if (node.type === TopologyNodeTypes.PersistentVolume) {
-    } else if (node.type === TopologyNodeTypes.PersistentVolumeClaim) {
-    } else if (node.type === TopologyNodeTypes.Pod) {
+    } else if (node.nodeType === TopologyNodeTypes.PersistentVolume) {
+    } else if (node.nodeType === TopologyNodeTypes.PersistentVolumeClaim) {
+    } else if (node.nodeType === TopologyNodeTypes.Pod) {
     }
 
-    if (node.type === TopologyNodeTypes.StatefulSet) {
+    if (node.nodeType === TopologyNodeTypes.StatefulSet) {
       // find volume template
       if (node.detail && node.detail.spec.volumeClaimTemplates) {
         const vcts = node.detail.spec.volumeClaimTemplates;
@@ -260,13 +277,20 @@ const getFromCache = (
       type === TopologyNodeTypes.PersistentVolumeClaim ||
       type === TopologyNodeTypes.StorageClass)
   ) {
-    const node = {
+    const node: TopologyNode = {
       id: uuidv4(),
+      type: "image",
       name: name,
-      type: type,
+      label: fittingString(name, 15),
       namespace: namespace
         ? getFromCache(namespace, TopologyNodeTypes.Namespace)[0]
         : undefined,
+      img: type.icon,
+      groupId: namespace
+        ? getFromCache(namespace, TopologyNodeTypes.Namespace)[0].id
+        : "cluster",
+      degree: type.degree,
+      nodeType: type,
     } as TopologyNode;
     cache.ObjType[type.name].add(node);
     result.push(node);
@@ -301,4 +325,15 @@ const intersection = (sets: Set<any>[]): Set<any> => {
     return sets[0];
   }
   return intersection([intersection([sets[0], sets[1]]), ...sets.slice(2)]);
+};
+
+const fittingString = (str: string, maxWidth: number) => {
+  const width = str.length;
+  const ellipsis = "\n";
+  if (width > maxWidth) {
+    const result =
+      str.substring(0, maxWidth) + ellipsis + str.substring(maxWidth, width);
+    return result;
+  }
+  return str;
 };

@@ -1,5 +1,6 @@
 import { TopologyNode } from ".";
 import { TopologyLink } from "./topology";
+import { GroupConfig } from "../../node_modules/@antv/g6/lib/types";
 
 export interface StatusState {
   isInited: boolean;
@@ -9,6 +10,8 @@ export interface StatusState {
 export interface TopologyState {
   links: TopologyLink[];
   nodes: TopologyNode[];
+  groups: GroupConfig[];
+  layout: string;
 }
 
 export interface DraggerState {
