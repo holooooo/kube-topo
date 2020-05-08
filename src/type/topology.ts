@@ -79,15 +79,16 @@ export interface TopologyNode extends NodeConfig {
   [key: string]: any;
 }
 
-export enum TopologyLinkType {
-  Reference = "#3498db",
-  Belong = "#000",
-}
+export const TopologyLinkType: { [key: string]: string } = {
+  Reference: "#3498db",
+  Expose: "#2ecc71",
+  Belong: "#000",
+};
 
 export interface TopologyLink extends EdgeConfig {
   source: string;
   target: string;
-  color: TopologyLinkType;
+  color: string;
 }
 export interface Resources {
   limit: { cpu: string; memory: string };

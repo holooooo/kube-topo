@@ -13,7 +13,7 @@ import { GroupConfig } from "../../node_modules/@antv/g6/lib/types";
 export let cache: {
     [key: string]: { [value: string]: Set<TopologyNode> };
   } = {},
-  links: { [source: string]: { [target: string]: TopologyLinkType } },
+  links: { [source: string]: { [target: string]: string } },
   groups: GroupConfig[] = [{ id: "cluster", title: "Cluster" }];
 
 export const parse = (
@@ -132,8 +132,13 @@ const findRelation = () => {
       groups.push({ id: node.id, title: node.name });
     }
 
-    let referenceList: TopologyNode[] = [];
-    let belongList: TopologyNode[] = [];
+    let linksSet: {
+      [key: string]: TopologyNode[];
+    } = {
+      Reference: [],
+      Belong: [],
+      Expose: [],
+    };
     if (!node.detail || !node.namespace) {
       return;
     }
@@ -159,7 +164,7 @@ const findRelation = () => {
           } else {
             continue;
           }
-          referenceList.push(
+          linksSet.Reference.push(
             ...getFromCache(
               volume[
                 volumeType.replace(volumeType[0], volumeType[0].toLowerCase())
@@ -185,7 +190,7 @@ const findRelation = () => {
           } else if (envFrom.secretRef) {
             envFromType = "Secret";
           }
-          referenceList.push(
+          linksSet.Reference.push(
             ...getFromCache(
               envFrom[
                 envFromType.replace(
@@ -205,12 +210,12 @@ const findRelation = () => {
         const targets = matchLabel(label, node.namespace.name).filter((t) =>
           workloadTypes.has(t.nodeType)
         );
-        referenceList.push(...targets);
+        linksSet.Expose.push(...targets);
       }
     } else if (node.nodeType === TopologyNodeTypes.Ingress) {
       const paths = node.detail.spec.paths;
       for (let path of paths) {
-        referenceList.push(
+        linksSet.Expose.push(
           getFromCache(
             path.backend.serviceName,
             TopologyNodeTypes.Service,
@@ -224,8 +229,8 @@ const findRelation = () => {
     } else if (node.nodeType === TopologyNodeTypes.Pod) {
     }
 
+    // find volume template
     if (node.nodeType === TopologyNodeTypes.StatefulSet) {
-      // find volume template
       if (node.detail && node.detail.spec.volumeClaimTemplates) {
         const vcts = node.detail.spec.volumeClaimTemplates;
         let scSet: Set<TopologyNode> = new Set();
@@ -239,17 +244,15 @@ const findRelation = () => {
             );
           }
         }
-        referenceList.push(...scSet);
+        linksSet.Reference.push(...scSet);
       }
     }
 
-    referenceList.forEach((r) => {
-      links[node.id] = links[node.id] || {};
-      links[node.id][r.id] = TopologyLinkType.Reference;
-    });
-    belongList.forEach((b) => {
-      links[node.id] = links[node.id] || {};
-      links[node.id][b.id] = TopologyLinkType.Belong;
+    Object.keys(linksSet).forEach((key) => {
+      linksSet[key].forEach((r) => {
+        links[node.id] = links[node.id] || {};
+        links[node.id][r.id] = TopologyLinkType[key];
+      });
     });
   });
 };
