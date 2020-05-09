@@ -1,12 +1,12 @@
 import { TopologyState, TopologyLink, TopologyNode } from "../type";
 import { AnyAction } from "redux";
-import { GroupConfig } from "../../node_modules/@antv/g6/lib/types";
+import { GroupConfig } from "@antv/g6/lib/types";
 
 const initTopologyNodesState = {
   links: [],
   nodes: [],
   groups: [],
-  layout: "force",
+  layout: "Concentric",
 } as TopologyState;
 
 const path = "topolopy/";

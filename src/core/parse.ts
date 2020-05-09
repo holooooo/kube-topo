@@ -8,7 +8,7 @@ import {
   TopologyLink,
 } from "../type";
 import { v4 as uuidv4 } from "uuid";
-import { GroupConfig } from "../../node_modules/@antv/g6/lib/types";
+import { GroupConfig } from "@antv/g6/lib/types";
 
 export let cache: {
     [key: string]: { [value: string]: Set<TopologyNode> };

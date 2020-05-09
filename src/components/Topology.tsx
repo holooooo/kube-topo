@@ -2,9 +2,9 @@ import React from "react";
 import { TopologyNode, TopologyLink, StateStore } from "../type";
 import { connect } from "react-redux";
 import G6 from "@antv/g6";
-import { Graph } from "../../node_modules/@antv/g6/lib";
+import { Graph } from "@antv/g6/lib";
 import FloatBar from "./FloatBar";
-import { GroupConfig } from "../../node_modules/@antv/g6/lib/types";
+import { GroupConfig } from "@antv/g6/lib/types";
 import { ILayoutOptions } from "@antv/g6/lib/interface/graph";
 import { setLayout } from "../reducers/topology";
 
@@ -104,6 +104,16 @@ export class Topology extends React.Component<Props> {
           },
         },
       },
+      defaultEdge: {
+        // type: 'line',  // 在数据中已经指定 type，这里无需再次指定
+        style: {
+          lineWidth: 2,
+        },
+        labelCfg: {
+          position: "end",
+          refY: -10,
+        },
+      },
       modes: {
         default: [
           "drag-canvas",
@@ -137,6 +147,7 @@ export class Topology extends React.Component<Props> {
       edgeStateStyles: {
         active: {
           stroke: "#999",
+          lineWidth: 2,
         },
       },
     };

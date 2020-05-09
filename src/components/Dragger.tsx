@@ -6,7 +6,7 @@ import { parse } from "../core/parse";
 import { setDragging, setLoading } from "../reducers/dragger";
 import { setTopoDatas } from "../reducers/topology";
 import { Layout, Spin, Card, Row, Col, message } from "antd";
-import { GroupConfig } from "../../node_modules/@antv/g6/lib/types";
+import { GroupConfig } from "@antv/g6/lib/types";
 
 const { Content } = Layout;
 

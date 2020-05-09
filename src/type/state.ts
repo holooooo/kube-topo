@@ -1,6 +1,6 @@
 import { TopologyNode } from ".";
 import { TopologyLink } from "./topology";
-import { GroupConfig } from "../../node_modules/@antv/g6/lib/types";
+import { GroupConfig } from "@antv/g6/lib/types";
 
 export interface StatusState {
   isInited: boolean;

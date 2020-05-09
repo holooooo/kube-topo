@@ -24,7 +24,10 @@ export class FloatBar extends React.Component<Props> {
         size="small"
         renderItem={(item) => (
           <List.Item>
-            <Button onClick={() => this.props.handleSwichLayout(item)}>
+            <Button
+              type="link"
+              onClick={() => this.props.handleSwichLayout(item)}
+            >
               {item}
             </Button>
           </List.Item>

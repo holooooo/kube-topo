@@ -1,4 +1,4 @@
-import { NodeConfig, EdgeConfig } from "../../node_modules/@antv/g6/lib/types";
+import { NodeConfig, EdgeConfig } from "@antv/g6/lib/types";
 
 export interface TopologyNodeType {
   name: string;
