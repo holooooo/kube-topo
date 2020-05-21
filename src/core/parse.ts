@@ -7,10 +7,10 @@ import {
   TopologyNodeType,
   TopologyLink,
 } from "../type";
-import { v4 as uuidv4 } from "uuid";
 import { GroupConfig } from "@antv/g6/lib/types";
+import { intersection } from "../utils";
 
-export let cache: {
+let cache: {
     [key: string]: { [value: string]: Set<TopologyNode> };
   } = {},
   links: { [source: string]: { [target: string]: string } },
@@ -74,37 +74,8 @@ const parseTopologyNode = (obj: { [key: string]: any }) => {
     TopologyNodeTypes[obj.kind],
     obj.metadata.namespace || undefined
   )[0];
-  const temp = {
-    id: uuidv4(),
-    type: "image",
-    name: obj.metadata.name,
-    label: fittingString(obj.metadata.name, 15),
-    namespace: getFromCache(
-      obj.metadata.namespace,
-      TopologyNodeTypes.Namespace
-    )[0],
-    labels: (obj.metadata.labels as { [keys: string]: string }) || [],
-    img: TopologyNodeTypes[obj.kind].icon,
-    groupId:
-      getFromCache(obj.metadata.namespace, TopologyNodeTypes.Namespace)[0].id ||
-      "cluster",
-    degree: TopologyNodeTypes[obj.kind].degree,
-    annotations: (obj.metadata.annotations as { [keys: string]: string }) || [],
-    nodeType: TopologyNodeTypes[obj.kind],
-    detail: obj,
-  };
+  const temp = new TopologyNode(obj);
   node = node ? Object.assign(node, temp) : temp;
-
-  // Special resource handling
-  if (workloadTypes.has(node.nodeType)) {
-    node.selectors = obj.spec.selector.matchLabels as {
-      [keys: string]: string;
-    };
-  } else if (node.nodeType === TopologyNodeTypes.Service) {
-    node.selectors = obj.spec.selector as {
-      [keys: string]: string;
-    };
-  }
 
   // save to cache
   if (node.labels) {
@@ -280,21 +251,7 @@ const getFromCache = (
       type === TopologyNodeTypes.PersistentVolumeClaim ||
       type === TopologyNodeTypes.StorageClass)
   ) {
-    const node: TopologyNode = {
-      id: uuidv4(),
-      type: "image",
-      name: name,
-      label: fittingString(name, 15),
-      namespace: namespace
-        ? getFromCache(namespace, TopologyNodeTypes.Namespace)[0]
-        : undefined,
-      img: type.icon,
-      groupId: namespace
-        ? getFromCache(namespace, TopologyNodeTypes.Namespace)[0].id
-        : "cluster",
-      degree: type.degree,
-      nodeType: type,
-    } as TopologyNode;
+    const node = new TopologyNode(undefined, name, namespace, type);
     cache.ObjType[type.name].add(node);
     result.push(node);
   }
@@ -319,24 +276,4 @@ const matchLabel = (
   return Array.from(intersection(setList)).filter(
     (n) => n.namespace.name === namespace
   );
-};
-
-const intersection = (sets: Set<any>[]): Set<any> => {
-  if (sets.length === 2) {
-    return new Set([...sets[0]].filter((s) => sets[1].has(s)));
-  } else if (sets.length === 1) {
-    return sets[0];
-  }
-  return intersection([intersection([sets[0], sets[1]]), ...sets.slice(2)]);
-};
-
-const fittingString = (str: string, maxWidth: number) => {
-  const width = str.length;
-  const ellipsis = "\n";
-  if (width > maxWidth) {
-    const result =
-      str.substring(0, maxWidth) + ellipsis + str.substring(maxWidth, width);
-    return result;
-  }
-  return str;
 };
