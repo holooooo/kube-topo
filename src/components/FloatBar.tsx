@@ -1,21 +1,18 @@
 import React from "react";
 import { Button, Tooltip, Popover, List } from "antd";
-import { DeleteTwoTone, LayoutTwoTone } from "@ant-design/icons";
-import { setTopoDatas } from "../reducers/topology";
-import { connect } from "react-redux";
-import { StateStore } from "../type";
+import {
+  DeleteTwoTone,
+  LayoutTwoTone,
+  GithubOutlined,
+} from "@ant-design/icons";
 import { LAYOUTS } from "./Topology";
 
 // tslint:disable-next-line:no-empty-interface
 export interface Props {
   handleSwichLayout: (layout: string) => void;
-  setTopoDatas: typeof setTopoDatas;
+  handleClean: () => void;
 }
 export class FloatBar extends React.Component<Props> {
-  handleDelete = () => {
-    this.props.setTopoDatas({ links: [], nodes: [], groups: [] });
-  };
-
   renderLayouts = () => {
     return (
       <List
@@ -43,22 +40,20 @@ export class FloatBar extends React.Component<Props> {
           <Button
             shape="circle"
             icon={<DeleteTwoTone />}
-            onClick={this.handleDelete}
+            onClick={this.props.handleClean}
           />
         </Tooltip>
         <Popover content={this.renderLayouts()} title="Change Layout">
           <Button shape="circle" icon={<LayoutTwoTone />} />
         </Popover>
+        <Button
+          shape="circle"
+          icon={<GithubOutlined />}
+          href="https://github.com/Okabe-Kurisu/kube-topo"
+        />
       </div>
     );
   }
 }
-const mapStateToProps = (state: StateStore) => {
-  return {};
-};
 
-const mapDispatchToProps = {
-  setTopoDatas,
-};
-
-export default connect(mapStateToProps, mapDispatchToProps)(FloatBar);
+export default FloatBar;

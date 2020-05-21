@@ -67,6 +67,12 @@ const initCache = () => {
   });
 };
 
+export const cleanCache = () => {
+  cache = {};
+  links = {};
+  groups = [];
+};
+
 const parseTopologyNode = (obj: { [key: string]: any }) => {
   // init obj
   let node = getFromCache(
@@ -228,7 +234,7 @@ const findRelation = () => {
   });
 };
 
-const getFromCache = (
+export const getFromCache = (
   name: string,
   type: TopologyNodeType,
   namespace?: string
