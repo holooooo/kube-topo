@@ -62,12 +62,6 @@ export interface Props {
 export class Topology extends React.Component<Props> {
   private graphRef: React.RefObject<HTMLDivElement>;
   private graph!: Graph;
-  private minimap = new G6.Minimap({
-    size: [100, 100],
-    className: "minimap",
-    type: "delegate",
-  });
-  private grid = new G6.Grid();
 
   constructor(props: Props) {
     super(props);
@@ -78,6 +72,13 @@ export class Topology extends React.Component<Props> {
     if (!this.graphRef.current || !this.props.nodes.length) {
       return;
     }
+
+    const minimap = new G6.Minimap({
+      size: [100, 100],
+      className: "minimap",
+      type: "delegate",
+    });
+    const grid = new G6.Grid();
 
     const config = {
       animate: true,
@@ -96,7 +97,7 @@ export class Topology extends React.Component<Props> {
         labelCfg: {
           style: {
             fill: "#1890ff",
-            fontSize: 48,
+            fontSize: 24,
             background: {
               fill: "#ffffff",
               stroke: "#9EC9FF",
@@ -137,7 +138,7 @@ export class Topology extends React.Component<Props> {
           },
         ],
       },
-      plugins: [this.minimap, this.grid],
+      plugins: [minimap, grid],
       nodeStateStyles: {
         active: {
           opacity: 1,
@@ -153,6 +154,7 @@ export class Topology extends React.Component<Props> {
         },
       },
     };
+
     this.graph
       ? this.graph.updateLayout(config)
       : (this.graph = new G6.Graph(config));
@@ -175,7 +177,9 @@ export class Topology extends React.Component<Props> {
     this.graph.clear();
     const plugs: any[] = this.graph.get("plugins");
     plugs.forEach((plug) => plug.destroy());
-    this.graph.get("layoutController").destroy();
+
+    this.graph.get("modeController").destroy();
+    this.graph.get("customGroupControll").destroy();
     this.graph.get("canvas").destroy();
     this.graph = null!;
   };

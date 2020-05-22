@@ -4,17 +4,23 @@ import {
   TopologyNodeTypes,
   TopologyLinkType,
   workloadTypes,
-  TopologyNodeType,
   TopologyLink,
+  Rules,
+  ExistFilter,
+  MatchFilter,
+  Rule,
+  Result,
 } from "../type";
 import { GroupConfig } from "@antv/g6/lib/types";
-import { intersection } from "../utils";
-
-let cache: {
-    [key: string]: { [value: string]: Set<TopologyNode> };
-  } = {},
-  links: { [source: string]: { [target: string]: string } },
-  groups: GroupConfig[] = [{ id: "cluster", title: "Cluster" }];
+import {
+  initCache,
+  cache,
+  links,
+  groups,
+  getFromCache,
+  matchLabel,
+  resetLinks,
+} from "./cache";
 
 export const parse = (
   yamlFile: string,
@@ -56,23 +62,6 @@ const handle = (yamls: { [key: string]: any }[]) => {
   findRelation();
 };
 
-const initCache = () => {
-  if (!cache.ObjType) {
-    cache.ObjType = {};
-  }
-  Object.keys(TopologyNodeTypes).forEach((key) => {
-    if (!cache.ObjType[key]) {
-      cache.ObjType[key] = new Set();
-    }
-  });
-};
-
-export const cleanCache = () => {
-  cache = {};
-  links = {};
-  groups = [];
-};
-
 const parseTopologyNode = (obj: { [key: string]: any }) => {
   // init obj
   let node = getFromCache(
@@ -96,7 +85,7 @@ const parseTopologyNode = (obj: { [key: string]: any }) => {
 };
 
 const findRelation = () => {
-  links = {};
+  resetLinks();
   let topoNodeList: TopologyNode[] = [];
   Object.values(cache.ObjType).forEach(
     (v) => (topoNodeList = topoNodeList.concat([...v]))
@@ -109,177 +98,116 @@ const findRelation = () => {
       groups.push({ id: node.id, title: node.name });
     }
 
-    let linksSet: {
-      [key: string]: TopologyNode[];
-    } = {
-      Reference: [],
-      Belong: [],
-      Expose: [],
-    };
+    let results: Result[] = [];
     if (!node.detail || !node.namespace) {
       return;
     }
 
-    // belongList.push(node.namespace);
-
-    if (workloadTypes.has(node.nodeType)) {
-      // find cm ,secret and pvc volume
-      if (node.detail.spec.template.spec.volumes) {
-        const volumes = node.detail.spec.template.spec.volumes;
-        for (let volume of volumes) {
-          let volumeType = "";
-          let volumeName = "";
-          if (volume.secret) {
-            volumeType = "Secret";
-            volumeName = "secretName";
-          } else if (volume.configMap) {
-            volumeType = "ConfigMap";
-            volumeName = "name";
-          } else if (volume.persistentVolumeClaim) {
-            volumeType = "PersistentVolumeClaim";
-            volumeName = "claimName";
-          } else {
-            continue;
-          }
-          linksSet.Reference.push(
-            ...getFromCache(
-              volume[
-                volumeType.replace(volumeType[0], volumeType[0].toLowerCase())
-              ][volumeName],
-              TopologyNodeTypes[volumeType],
-              node.namespace?.name
-            )
-          );
-        }
-
-        // ergodic container, find envRef
-        const containers = node.detail.spec.template.spec.containers;
-        let envFroms: { [key: string]: { [key: string]: string } }[] = [];
-        for (let contain of containers) {
-          if (contain.envFrom) {
-            envFroms.push(...contain.envFrom);
-          }
-        }
-        envFroms.forEach((envFrom) => {
-          let envFromType = "";
-          if (envFrom.configMapRef) {
-            envFromType = "ConfigMap";
-          } else if (envFrom.secretRef) {
-            envFromType = "Secret";
-          }
-          linksSet.Reference.push(
-            ...getFromCache(
-              envFrom[
-                envFromType.replace(
-                  envFromType[0],
-                  envFromType[0].toLowerCase()
-                ) + "Ref"
-              ].name,
-              TopologyNodeTypes[envFromType],
-              node.namespace?.name
-            )
-          );
-        });
-      }
-    } else if (node.nodeType === TopologyNodeTypes.Service) {
-      if (node.detail.spec.selector && node.namespace) {
-        const label = node.detail.spec.selector;
-        const targets = matchLabel(label, node.namespace.name).filter((t) =>
-          workloadTypes.has(t.nodeType)
-        );
-        linksSet.Expose.push(...targets);
-      }
-    } else if (node.nodeType === TopologyNodeTypes.Ingress) {
-      const paths = node.detail.spec.paths;
-      for (let path of paths) {
-        linksSet.Expose.push(
-          getFromCache(
-            path.backend.serviceName,
-            TopologyNodeTypes.Service,
-            node.namespace.name
-          )[0]
-        );
-      }
-      // TODO go on
-    } else if (node.nodeType === TopologyNodeTypes.PersistentVolume) {
-    } else if (node.nodeType === TopologyNodeTypes.PersistentVolumeClaim) {
-    } else if (node.nodeType === TopologyNodeTypes.Pod) {
+    const parsers = parseMap[node.nodeType.name];
+    if (!parsers) {
+      return;
+    }
+    for (const parser of parsers) {
+      results = results.concat(parser(node));
     }
 
-    // find volume template
-    if (node.nodeType === TopologyNodeTypes.StatefulSet) {
-      if (node.detail && node.detail.spec.volumeClaimTemplates) {
-        const vcts = node.detail.spec.volumeClaimTemplates;
-        let scSet: Set<TopologyNode> = new Set();
-        for (let vct of vcts) {
-          if (vct.spec.storageClassName) {
-            scSet.add(
-              getFromCache(
-                vct.spec.storageClassName,
-                TopologyNodeTypes.StorageClass
-              )[0]
-            );
-          }
-        }
-        linksSet.Reference.push(...scSet);
-      }
-    }
-
-    Object.keys(linksSet).forEach((key) => {
-      linksSet[key].forEach((r) => {
+    for (const result of results) {
+      for (const r of result.nodes) {
         links[node.id] = links[node.id] || {};
-        links[node.id][r.id] = TopologyLinkType[key];
-      });
-    });
-  });
-};
-
-export const getFromCache = (
-  name: string,
-  type: TopologyNodeType,
-  namespace?: string
-): TopologyNode[] => {
-  let result: TopologyNode[] = [];
-  if (!name) {
-    return result;
-  }
-  cache.ObjType[type.name].forEach((node) => {
-    if (node.name === name) {
-      if (namespace && node.namespace?.name !== namespace) {
-        return;
+        links[node.id][r.id] = TopologyLinkType[result.type];
       }
-      result.push(node);
     }
   });
-  if (
-    result.length === 0 &&
-    (type === TopologyNodeTypes.Namespace ||
-      type === TopologyNodeTypes.PersistentVolumeClaim ||
-      type === TopologyNodeTypes.StorageClass)
-  ) {
-    const node = new TopologyNode(undefined, name, namespace, type);
-    cache.ObjType[type.name].add(node);
-    result.push(node);
-  }
-  return result;
 };
 
-const matchLabel = (
-  labels: { [keys: string]: string },
-  namespace: string
-): TopologyNode[] => {
-  let setList: Set<TopologyNode>[] = [];
-  for (let key of Object.keys(labels)) {
-    if (!cache[key]) {
-      return [];
-    }
-    let tempSet: Set<TopologyNode> = cache[key][labels[key]];
-    if (!tempSet) {
-      return [];
-    }
-    setList.push(tempSet);
+const parseMap: {
+  [key: string]: ((obj: TopologyNode) => Result)[];
+} = {};
+
+// parse ./rule.yaml and generate the corresponding parser
+export const initRelationParser = () => {
+  const rules: Rules = (process.env.RULES as unknown) as Rules;
+  for (const rule of rules.rules) {
+    handleParser(rule);
   }
-  return Array.from(intersection(setList)).filter(
-    (n) => n.namespace.name === namespace
-  );
+};
+
+const handleParser = (rule: Rule) => {
+  for (const nodeType of rule.nodeTypes)
+    for (const filter of rule.filters) {
+      if ("exist" in filter) {
+        parseMap[nodeType] = (parseMap[nodeType] || []).concat([
+          existParser(rule.type, filter),
+        ]);
+      } else {
+        parseMap[nodeType] = (parseMap[nodeType] || []).concat([
+          matchParser(rule.type, filter),
+        ]);
+      }
+    }
+};
+
+const existParser = (type: string, filter: ExistFilter) => {
+  const isExist = (obj: any, exist: string): boolean => {
+    if (exist) {
+      const existSlice = exist.split(".");
+      obj = obj[existSlice[0]];
+      const [, ...tail] = existSlice;
+      return (obj && isExist(obj, tail.join("."))) || false;
+    }
+    return true;
+  };
+
+  const getTargets = (
+    obj: any,
+    target: string,
+    type: string,
+    namespace: string
+  ): TopologyNode[] => {
+    if (target) {
+      const targetSlice = target.split(".");
+      const [, ...tail] = targetSlice;
+      if (targetSlice[0] === "$") {
+        obj = [...obj];
+        let result: TopologyNode[] = [];
+        for (const o of obj) {
+          result = result.concat(
+            getTargets(o, tail.join("."), type, namespace) || []
+          );
+        }
+        return result;
+      }
+      obj = obj[targetSlice[0]];
+      return (obj && getTargets(obj, tail.join("."), type, namespace)) || [];
+    }
+    return getFromCache(obj as string, TopologyNodeTypes[type], namespace);
+  };
+
+  return (obj: TopologyNode): Result => {
+    if (!isExist(obj.detail!, filter.exist)) return { type: type, nodes: [] };
+    return {
+      type: type,
+      nodes: getTargets(obj, filter.target, filter.type, obj.namespace!.name),
+    };
+  };
+};
+
+const matchParser = (type: string, filter: MatchFilter) => {
+  const getLabel = (obj: any, match: string): { [keys: string]: string } => {
+    if (match) {
+      const matchSlice = match.split(".");
+      obj = obj[matchSlice[0]];
+      const [, ...tail] = matchSlice;
+      return (obj && getLabel(obj, tail.join("."))) || false;
+    }
+    return obj;
+  };
+
+  return (obj: TopologyNode): Result => {
+    const label = getLabel(obj.detail, filter.match);
+    const targets = matchLabel(label, obj.namespace!.name).filter((t) =>
+      workloadTypes.has(t.nodeType)
+    );
+    return { type: type, nodes: targets };
+  };
 };

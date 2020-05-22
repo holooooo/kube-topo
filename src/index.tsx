@@ -6,8 +6,10 @@ import * as serviceWorker from "./serviceWorker";
 import { Provider } from "react-redux";
 import { createStore } from "redux";
 import kubeTopo from "./reducers";
+import { initRelationParser } from "./core";
 
 let store = createStore(kubeTopo);
+initRelationParser();
 
 ReactDOM.render(
   <Provider store={store}>

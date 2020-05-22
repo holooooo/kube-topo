@@ -1,0 +1,46 @@
+rules:
+  - type: Reference
+    nodeTypes:
+      - ReplicaSet
+      - ReplicationController
+      - Deployment
+      - StatefulSet
+      - DaemonSet
+      - Job
+      - CronJob
+    filters:
+      - exist: spec.template.spec.volumes
+        target: spec.template.spec.volumes.$.secretName
+        type: Secret
+      - exist: spec.template.spec.volumes
+        target: spec.template.spec.volumes.$.name
+        type: ConfigMap
+      - exist: spec.template.spec.volumes.PersistentVolumeClaim
+        target: spec.template.spec.volumes.claimName
+        type: PersistentVolumeClaim
+      - exist: spec.template.spec.containers
+        target: spec.template.spec.containers.$.envFrom.$.configMapRef
+        type: ConfigMap
+      - exist: spec.template.spec.containers
+        target: spec.template.spec.containers.$.envFrom.$.secretRef
+        type: Secret
+  - type: Reference
+    nodeTypes:
+      - Service
+    filters:
+      - match: spec.selector
+        nodeTypes:
+          - ReplicaSet
+          - ReplicationController
+          - Deployment
+          - StatefulSet
+          - DaemonSet
+          - Job
+          - CronJob
+  - type: Reference
+    nodeTypes:
+      - StatefulSet
+    filters:
+      - exist: spec.volumeClaimTemplates
+        target: spec.volumeClaimTemplates.$.storageClassName
+        nodeTypes: StorageClass
