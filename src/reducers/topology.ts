@@ -7,6 +7,8 @@ const initTopologyNodesState = {
   nodes: [],
   groups: [],
   layout: "Concentric",
+  height: 0,
+  width: 0,
 } as TopologyState;
 
 const path = "topolopy/";
@@ -15,6 +17,7 @@ const SET_NODES = path + "setNodes";
 const SET_GROUPS = path + "setGroups";
 const SET_TOPODATAS = path + "setTopoDatas";
 const SET_LAYOUT = path + "setLayout";
+const SET_CANVAS = path + "setCanvas";
 
 export const setLinks = (links: TopologyLink[]) => {
   return { type: SET_LINKS, links };
@@ -35,6 +38,9 @@ export const setTopoDatas = (data: {
 };
 export const setLayout = (layout: string) => {
   return { type: SET_LAYOUT, layout };
+};
+export const setCanvas = (width: number, height: number) => {
+  return { type: SET_CANVAS, width, height };
 };
 
 const topology = (
@@ -68,6 +74,12 @@ const topology = (
       return {
         ...state,
         layout: action.layout,
+      };
+    case SET_CANVAS:
+      return {
+        ...state,
+        width: action.width,
+        height: action.height,
       };
     default:
       return state;

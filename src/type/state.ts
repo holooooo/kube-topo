@@ -12,6 +12,8 @@ export interface TopologyState {
   nodes: TopologyNode[];
   groups: GroupConfig[];
   layout: string;
+  width: number;
+  height: number;
 }
 
 export interface DraggerState {

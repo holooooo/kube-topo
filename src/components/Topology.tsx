@@ -6,7 +6,7 @@ import { Graph } from "@antv/g6/lib";
 import FloatBar from "./FloatBar";
 import { GroupConfig } from "@antv/g6/lib/types";
 import { ILayoutOptions } from "@antv/g6/lib/interface/graph";
-import { setLayout, setTopoDatas } from "../reducers/topology";
+import { setLayout, setTopoDatas, setCanvas } from "../reducers/topology";
 import { cleanCache } from "../core";
 
 export const LAYOUTS: { [key: string]: ILayoutOptions } = {
@@ -55,9 +55,12 @@ export interface Props {
   nodes: TopologyNode[];
   edges: TopologyLink[];
   groups: GroupConfig[];
+  height: number;
+  width: number;
   layout: string;
   setLayout: typeof setLayout;
   setTopoDatas: typeof setTopoDatas;
+  setCanvas: typeof setCanvas;
 }
 export class Topology extends React.Component<Props> {
   private graphRef: React.RefObject<HTMLDivElement>;
@@ -67,6 +70,10 @@ export class Topology extends React.Component<Props> {
     super(props);
     this.graphRef = React.createRef();
   }
+  componentDidMount = () => {
+    window.onresize = this.handleResize;
+    this.handleResize();
+  };
 
   renderGraph = () => {
     if (!this.graphRef.current || !this.props.nodes.length) {
@@ -79,12 +86,13 @@ export class Topology extends React.Component<Props> {
       type: "delegate",
     });
     const grid = new G6.Grid();
+    const { width, height } = this.props;
 
     const config = {
       animate: true,
       container: this.graphRef.current,
-      width: document.body.clientWidth,
-      height: document.body.clientHeight - 7,
+      width,
+      height,
       fitView: true,
       layout: LAYOUTS[this.props.layout],
       defaultNode: {
@@ -156,11 +164,18 @@ export class Topology extends React.Component<Props> {
     };
 
     this.graph
-      ? this.graph.updateLayout(config)
+      ? this.graph.changeSize(width, height).updateLayout(config)
       : (this.graph = new G6.Graph(config));
     this.graph.read({ ...this.props });
 
     this.graph.render();
+  };
+
+  handleResize = () => {
+    this.props.setCanvas(
+      document.body.clientWidth,
+      document.body.clientHeight - 7
+    );
   };
 
   handleSwitchLayout = (layout: string) => {
@@ -213,12 +228,15 @@ const mapStateToProps = (state: StateStore) => {
     edges: state.topology.links,
     groups: state.topology.groups,
     layout: state.topology.layout,
+    height: state.topology.height,
+    width: state.topology.width,
   };
 };
 
 const mapDispatchToProps = {
   setLayout,
   setTopoDatas,
+  setCanvas,
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(Topology);
