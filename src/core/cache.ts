@@ -1,12 +1,12 @@
 import { intersection } from "../utils";
 import { TopologyNode, TopologyNodeTypes, TopologyNodeType } from "../type";
-import { GroupConfig } from "@antv/g6/lib/types";
+import { ComboConfig } from "@antv/g6/lib/types";
 
 export let cache: {
     [key: string]: { [value: string]: Set<TopologyNode> };
   } = {},
   links: { [source: string]: { [target: string]: string } },
-  groups: GroupConfig[] = [{ id: "cluster", title: "Cluster" }];
+  combos: ComboConfig[] = [{ id: "cluster", label: "Cluster" }];
 export const initCache = () => {
   if (!cache.ObjType) {
     cache.ObjType = {};
@@ -25,7 +25,7 @@ export const resetLinks = () => {
 export const cleanCache = () => {
   cache = {};
   links = {};
-  groups = [];
+  combos = [];
 };
 
 export const getFromCache = (

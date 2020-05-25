@@ -106,7 +106,7 @@ export class TopologyNode implements NodeConfig {
     this.img = this.nodeType.icon;
     this.detail = obj;
 
-    this.groupId = (this.namespace && this.namespace.id) || "cluster";
+    this.comboId = (this.namespace && this.namespace.name) || "cluster";
     this.degree = this.nodeType.degree;
     this.annotations =
       (obj && (obj.metadata.annotations as { [keys: string]: string })) || [];

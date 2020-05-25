@@ -11,28 +11,33 @@ import {
   Rule,
   Result,
 } from "../type";
-import { GroupConfig } from "@antv/g6/lib/types";
+import { ComboConfig } from "@antv/g6/lib/types";
 import {
   initCache,
   cache,
   links,
-  groups,
+  combos,
   getFromCache,
   matchLabel,
   resetLinks,
 } from "./cache";
+
+const parseMap: {
+  [key: string]: ((obj: TopologyNode) => Result)[];
+} = {};
 
 export const parse = (
   yamlFile: string,
   saveToState: (
     nodes: TopologyNode[],
     links: TopologyLink[],
-    groups: GroupConfig[]
+    combos: ComboConfig[]
   ) => void
 ) => {
   const yamlList = YAML.parseAllDocuments(yamlFile);
   initCache();
   handle([...yamlList.map((yaml) => yaml.toJSON())]);
+  findRelation();
 
   let nodesResult: TopologyNode[] = [] as TopologyNode[];
   Object.values(cache["ObjType"]).forEach(
@@ -49,7 +54,7 @@ export const parse = (
     )
   );
 
-  saveToState(nodesResult, linksResult, groups);
+  saveToState(nodesResult, linksResult, combos);
 };
 
 const handle = (yamls: { [key: string]: any }[]) => {
@@ -59,7 +64,6 @@ const handle = (yamls: { [key: string]: any }[]) => {
     }
     parseTopologyNode(yaml);
   });
-  findRelation();
 };
 
 const parseTopologyNode = (obj: { [key: string]: any }) => {
@@ -93,9 +97,9 @@ const findRelation = () => {
   topoNodeList.forEach((node) => {
     if (
       node.nodeType === TopologyNodeTypes.Namespace &&
-      groups.filter((g) => g.id === node.id).length === 0
+      combos.filter((c) => c.id === node.name).length === 0
     ) {
-      groups.push({ id: node.id, title: node.name });
+      combos.push({ id: node.name, label: node.name });
     }
 
     let results: Result[] = [];
@@ -119,10 +123,6 @@ const findRelation = () => {
     }
   });
 };
-
-const parseMap: {
-  [key: string]: ((obj: TopologyNode) => Result)[];
-} = {};
 
 // parse ./rule.yaml and generate the corresponding parser
 export const initRelationParser = () => {

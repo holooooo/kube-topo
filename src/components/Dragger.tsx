@@ -2,11 +2,10 @@ import React from "react";
 import Topology from "./Topology";
 import { StateStore, TopologyNode, TopologyLink } from "../type";
 import { connect } from "react-redux";
-import { parse } from "../core/parse";
-import { setDragging, setLoading } from "../reducers/dragger";
-import { setTopoDatas } from "../reducers/topology";
+import { parse } from "../core";
+import { setDragging, setLoading, setTopoDatas } from "../reducers";
 import { Layout, Spin, Card, Row, Col, message } from "antd";
-import { GroupConfig } from "@antv/g6/lib/types";
+import { ComboConfig } from "@antv/g6/lib/types";
 
 const { Content } = Layout;
 
@@ -90,10 +89,10 @@ class Dragger extends React.Component<Props> {
   saveToState = (
     nodes: TopologyNode[],
     links: TopologyLink[],
-    groups: GroupConfig[]
+    combos: ComboConfig[]
   ) => {
     this.props.setLoading(false);
-    this.props.setTopoDatas({ nodes, links, groups });
+    this.props.setTopoDatas({ nodes, links, combos });
   };
 
   onUpload = (files: File[]) => {

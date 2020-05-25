@@ -1,6 +1,6 @@
 import { TopologyNode } from ".";
 import { TopologyLink } from "./topology";
-import { GroupConfig } from "@antv/g6/lib/types";
+import { ComboConfig } from "@antv/g6/lib/types";
 
 export interface StatusState {
   isInited: boolean;
@@ -10,7 +10,7 @@ export interface StatusState {
 export interface TopologyState {
   links: TopologyLink[];
   nodes: TopologyNode[];
-  groups: GroupConfig[];
+  combos: ComboConfig[];
   layout: string;
   width: number;
   height: number;

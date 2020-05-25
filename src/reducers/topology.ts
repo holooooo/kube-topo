@@ -1,12 +1,12 @@
 import { TopologyState, TopologyLink, TopologyNode } from "../type";
 import { AnyAction } from "redux";
-import { GroupConfig } from "@antv/g6/lib/types";
+import { ComboConfig } from "@antv/g6/lib/types";
 
 const initTopologyNodesState = {
   links: [],
   nodes: [],
-  groups: [],
-  layout: "Concentric",
+  combos: [],
+  layout: "ComboForce",
   height: 0,
   width: 0,
 } as TopologyState;
@@ -14,7 +14,7 @@ const initTopologyNodesState = {
 const path = "topolopy/";
 const SET_LINKS = path + "setLinks";
 const SET_NODES = path + "setNodes";
-const SET_GROUPS = path + "setGroups";
+const SET_COMBOS = path + "setCombos";
 const SET_TOPODATAS = path + "setTopoDatas";
 const SET_LAYOUT = path + "setLayout";
 const SET_CANVAS = path + "setCanvas";
@@ -26,13 +26,13 @@ export const setLinks = (links: TopologyLink[]) => {
 export const setNodes = (nodes: TopologyNode[]) => {
   return { type: SET_NODES, nodes };
 };
-export const setGroups = (groups: GroupConfig[]) => {
-  return { type: SET_GROUPS, groups };
+export const setCombos = (combos: ComboConfig[]) => {
+  return { type: SET_COMBOS, combos };
 };
 export const setTopoDatas = (data: {
   nodes: TopologyNode[];
   links: TopologyLink[];
-  groups: GroupConfig[];
+  combos: ComboConfig[];
 }) => {
   return { type: SET_TOPODATAS, ...data };
 };
@@ -58,17 +58,17 @@ const topology = (
         ...state,
         nodes: action.nodes,
       };
-    case SET_GROUPS:
+    case SET_COMBOS:
       return {
         ...state,
-        groups: action.groups,
+        combos: action.combos,
       };
     case SET_TOPODATAS:
       return {
         ...state,
         links: action.links,
         nodes: action.nodes,
-        groups: action.groups,
+        combos: action.combos,
       };
     case SET_LAYOUT:
       return {

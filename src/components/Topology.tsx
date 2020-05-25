@@ -4,12 +4,11 @@ import { connect } from "react-redux";
 import G6 from "@antv/g6";
 import { Graph } from "@antv/g6/lib";
 import FloatBar from "./FloatBar";
-import { GroupConfig } from "@antv/g6/lib/types";
-import { ILayoutOptions } from "@antv/g6/lib/interface/graph";
-import { setLayout, setTopoDatas, setCanvas } from "../reducers/topology";
+import { ComboConfig, LayoutConfig, GraphData } from "@antv/g6/lib/types";
+import { setLayout, setTopoDatas, setCanvas } from "../reducers";
 import { cleanCache } from "../core";
 
-export const LAYOUTS: { [key: string]: ILayoutOptions } = {
+export const LAYOUTS: { [key: string]: LayoutConfig } = {
   Force: {
     type: "force",
     linkDistance: 64,
@@ -49,12 +48,15 @@ export const LAYOUTS: { [key: string]: ILayoutOptions } = {
     preventOverlap: true,
     sortBy: "degree",
   },
+  ComboForce: {
+    type: "comboForce",
+  },
 };
 
 export interface Props {
   nodes: TopologyNode[];
   edges: TopologyLink[];
-  groups: GroupConfig[];
+  combos: ComboConfig[];
   height: number;
   width: number;
   layout: string;
@@ -94,6 +96,7 @@ export class Topology extends React.Component<Props> {
       width,
       height,
       fitView: true,
+      groupByTypes: false,
       layout: LAYOUTS[this.props.layout],
       defaultNode: {
         size: 64,
@@ -116,7 +119,6 @@ export class Topology extends React.Component<Props> {
         },
       },
       defaultEdge: {
-        // type: 'line',  // 在数据中已经指定 type，这里无需再次指定
         style: {
           lineWidth: 2,
         },
@@ -125,13 +127,16 @@ export class Topology extends React.Component<Props> {
           refY: -10,
         },
       },
+      defaultCombo: {
+        type: "circle",
+      },
       modes: {
         default: [
           "drag-canvas",
           "zoom-canvas",
           "drag-node",
-          "drag-group",
-          "collapse-expand-group",
+          "drag-combo",
+          "collapse-expand-combo",
           "activate-relations",
           {
             type: "tooltip",
@@ -163,10 +168,17 @@ export class Topology extends React.Component<Props> {
       },
     };
 
-    this.graph
-      ? this.graph.changeSize(width, height).updateLayout(config)
-      : (this.graph = new G6.Graph(config));
-    this.graph.read({ ...this.props });
+    console.log(this.graph && this.graph.getCombos());
+    console.log(this.graph && JSON.parse(JSON.stringify({ ...this.props })));
+    if (this.graph) {
+      this.graph
+        .changeData({ ...this.props } as GraphData)
+        .changeSize(width, height)
+        .updateLayout(config);
+    } else {
+      this.graph = new G6.Graph(config);
+      this.graph.data({ ...this.props } as GraphData);
+    }
 
     this.graph.render();
   };
@@ -186,16 +198,10 @@ export class Topology extends React.Component<Props> {
   handleClean = () => {
     // clean data
     cleanCache();
-    this.props.setTopoDatas({ nodes: [], links: [], groups: [] });
+    this.props.setTopoDatas({ nodes: [], links: [], combos: [] });
 
     // clead graph view
-    this.graph.clear();
-    const plugs: any[] = this.graph.get("plugins");
-    plugs.forEach((plug) => plug.destroy());
-
-    this.graph.get("modeController").destroy();
-    this.graph.get("customGroupControll").destroy();
-    this.graph.get("canvas").destroy();
+    this.graph.destroy();
     this.graph = null!;
   };
 
@@ -226,7 +232,7 @@ const mapStateToProps = (state: StateStore) => {
   return {
     nodes: state.topology.nodes,
     edges: state.topology.links,
-    groups: state.topology.groups,
+    combos: state.topology.combos,
     layout: state.topology.layout,
     height: state.topology.height,
     width: state.topology.width,
