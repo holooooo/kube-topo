@@ -7,7 +7,7 @@ import FloatBar from "./FloatBar";
 import { GroupConfig } from "@antv/g6/lib/types";
 import { ILayoutOptions } from "@antv/g6/lib/interface/graph";
 import { setLayout, setTopoDatas, setCanvas } from "../reducers/topology";
-import { cleanCache } from "../core";
+import { initCache } from "../core";
 
 export const LAYOUTS: { [key: string]: ILayoutOptions } = {
   Force: {
@@ -185,7 +185,7 @@ export class Topology extends React.Component<Props> {
 
   handleClean = () => {
     // clean data
-    cleanCache();
+    initCache();
     this.props.setTopoDatas({ nodes: [], links: [], groups: [] });
 
     // clead graph view

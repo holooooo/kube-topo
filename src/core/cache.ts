@@ -2,32 +2,37 @@ import { intersection } from "../utils";
 import { TopologyNode, TopologyNodeTypes, TopologyNodeType } from "../type";
 import { GroupConfig } from "@antv/g6/lib/types";
 
-export let cache: {
-    [key: string]: { [value: string]: Set<TopologyNode> };
-  } = {},
+export let cache: { [key: string]: { [value: string]: Set<TopologyNode> } },
   links: { [source: string]: { [target: string]: string } },
-  groups: GroupConfig[] = [{ id: "cluster", title: "Cluster" }];
+  groups: GroupConfig[];
+
+/**
+ *clean all data in cache and init cache
+ *
+ */
 export const initCache = () => {
-  if (!cache.ObjType) {
-    cache.ObjType = {};
-  }
+  cache = {};
   Object.keys(TopologyNodeTypes).forEach((key) => {
     if (!cache.ObjType[key]) {
       cache.ObjType[key] = new Set();
     }
   });
+  links = {};
+  groups = [{ id: "cluster", title: "Cluster" }];
 };
 
 export const resetLinks = () => {
   links = {};
 };
 
-export const cleanCache = () => {
-  cache = {};
-  links = {};
-  groups = [];
-};
-
+/**
+ *get toponodes from cache
+ *
+ * @param {string} name
+ * @param {TopologyNodeType} type
+ * @param {string} [namespace]
+ * @returns {TopologyNode[]}
+ */
 export const getFromCache = (
   name: string,
   type: TopologyNodeType,
@@ -58,9 +63,17 @@ export const getFromCache = (
   return result;
 };
 
+/**
+ *search all node by labels
+ *
+ * @param {{ [keys: string]: string }} labels
+ * @param {string} namespace
+ * @returns {TopologyNode[]}
+ */
 export const matchLabel = (
   labels: { [keys: string]: string },
-  namespace: string
+  namespace?: string,
+  type?: TopologyNodeType
 ): TopologyNode[] => {
   let setList: Set<TopologyNode>[] = [];
   for (let key of Object.keys(labels)) {
@@ -73,7 +86,8 @@ export const matchLabel = (
     }
     setList.push(tempSet);
   }
-  return Array.from(intersection(setList)).filter(
-    (n) => n.namespace.name === namespace
-  );
+
+  return Array.from(intersection(setList))
+    .filter((n) => !namespace || n.namespace!.name === namespace)
+    .filter((n) => !type || n.nodeType === type);
 };

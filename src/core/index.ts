@@ -1,2 +1,3 @@
 export * from "./parse";
-export { cleanCache, getFromCache } from "./cache";
+export { initCache, getFromCache } from "./cache";
+export * from "./schedule";

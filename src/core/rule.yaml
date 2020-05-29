@@ -1,13 +1,13 @@
 rules:
   - type: Reference
     nodeTypes:
+      - CronJob
+      - DaemonSet
+      - Deployment
+      - Job
       - ReplicaSet
       - ReplicationController
-      - Deployment
       - StatefulSet
-      - DaemonSet
-      - Job
-      - CronJob
     filters:
       - exist: spec.template.spec.volumes
         target: spec.template.spec.volumes.$.secretName
@@ -30,13 +30,13 @@ rules:
     filters:
       - match: spec.selector
         nodeTypes:
+          - CronJob
+          - DaemonSet
+          - Deployment
+          - Job
           - ReplicaSet
           - ReplicationController
-          - Deployment
           - StatefulSet
-          - DaemonSet
-          - Job
-          - CronJob
   - type: Reference
     nodeTypes:
       - StatefulSet
