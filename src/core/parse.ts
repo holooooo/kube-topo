@@ -13,7 +13,6 @@ import {
 } from "../type";
 import { GroupConfig } from "@antv/g6/lib/types";
 import {
-  initCache,
   cache,
   links,
   groups,
@@ -21,19 +20,40 @@ import {
   matchLabel,
   resetLinks,
 } from "./cache";
+import { nodeSelect } from ".";
 
 export const parse = (
   yamlFile: string,
-  saveToState: (
+  save: (
     nodes: TopologyNode[],
     links: TopologyLink[],
     groups: GroupConfig[]
   ) => void
 ) => {
   const yamlList = YAML.parseAllDocuments(yamlFile);
-  initCache();
-  handle([...yamlList.map((yaml) => yaml.toJSON())]);
+  handleRawData([...yamlList.map((yaml) => yaml.toJSON())]);
+  findRelation();
+  nodeSelect();
+  saveToState(save);
+};
 
+const handleRawData = (yamls: { [key: string]: any }[]) => {
+  yamls.forEach((yaml) => {
+    if (!yaml) return;
+    if (yaml.kind === "List") {
+      return handleRawData(yaml.items);
+    }
+    parseTopologyNode(yaml);
+  });
+};
+
+const saveToState = (
+  save: (
+    nodes: TopologyNode[],
+    links: TopologyLink[],
+    groups: GroupConfig[]
+  ) => void
+) => {
   let nodesResult: TopologyNode[] = [] as TopologyNode[];
   Object.values(cache["ObjType"]).forEach(
     (list) => (nodesResult = nodesResult.concat(...list))
@@ -49,21 +69,16 @@ export const parse = (
     )
   );
 
-  saveToState(nodesResult, linksResult, groups);
+  save(nodesResult, linksResult, groups);
 };
 
-const handle = (yamls: { [key: string]: any }[]) => {
-  yamls.forEach((yaml) => {
-    if (yaml.kind === "List") {
-      return handle(yaml.items);
-    }
-    parseTopologyNode(yaml);
-  });
-  findRelation();
-};
-
+/**
+ *turn json obj to toponode obj
+ *
+ * @param {{ [key: string]: any }} obj
+ */
 const parseTopologyNode = (obj: { [key: string]: any }) => {
-  // init obj
+  // init node, if node has been create by cache(some globe obj such as ns, sc) then assign it with real node
   let node = getFromCache(
     obj.metadata.name,
     TopologyNodeTypes[obj.kind],
@@ -84,6 +99,10 @@ const parseTopologyNode = (obj: { [key: string]: any }) => {
   cache.ObjType[node.nodeType.name].add(node);
 };
 
+/**
+ *find the realtion inside nodes, rule come from ./rule.yaml file
+ *
+ */
 const findRelation = () => {
   resetLinks();
   let topoNodeList: TopologyNode[] = [];
@@ -91,6 +110,7 @@ const findRelation = () => {
     (v) => (topoNodeList = topoNodeList.concat([...v]))
   );
   topoNodeList.forEach((node) => {
+    // push namespace to g6 groups
     if (
       node.nodeType === TopologyNodeTypes.Namespace &&
       groups.filter((g) => g.id === node.id).length === 0
@@ -98,20 +118,12 @@ const findRelation = () => {
       groups.push({ id: node.id, title: node.name });
     }
 
-    let results: Result[] = [];
-    if (!node.detail || !node.namespace) {
-      return;
-    }
-
     const parsers = parseMap[node.nodeType.name];
-    if (!parsers) {
-      return;
-    }
-    for (const parser of parsers) {
-      results = results.concat(parser(node));
-    }
+    // skip fake or useless node
+    if (!node.detail || !node.namespace || !parsers) return;
 
-    for (const result of results) {
+    for (const parser of parsers) {
+      const result = parser(node);
       for (const r of result.nodes) {
         links[node.id] = links[node.id] || {};
         links[node.id][r.id] = TopologyLinkType[result.type];
@@ -124,6 +136,7 @@ const parseMap: {
   [key: string]: ((obj: TopologyNode) => Result)[];
 } = {};
 
+// TODO add more information in edges
 // parse ./rule.yaml and generate the corresponding parser
 export const initRelationParser = () => {
   const rules: Rules = (process.env.RULES as unknown) as Rules;
@@ -135,15 +148,13 @@ export const initRelationParser = () => {
 const handleParser = (rule: Rule) => {
   for (const nodeType of rule.nodeTypes)
     for (const filter of rule.filters) {
+      let parser;
       if ("exist" in filter) {
-        parseMap[nodeType] = (parseMap[nodeType] || []).concat([
-          existParser(rule.type, filter),
-        ]);
+        parser = existParser(rule.type, filter);
       } else {
-        parseMap[nodeType] = (parseMap[nodeType] || []).concat([
-          matchParser(rule.type, filter),
-        ]);
+        parser = matchParser(rule.type, filter);
       }
+      parseMap[nodeType] = (parseMap[nodeType] || []).concat([parser]);
     }
 };
 
@@ -151,9 +162,9 @@ const existParser = (type: string, filter: ExistFilter) => {
   const isExist = (obj: any, exist: string): boolean => {
     if (exist) {
       const existSlice = exist.split(".");
+      const rest = existSlice.slice(1).join(".");
       obj = obj[existSlice[0]];
-      const [, ...tail] = existSlice;
-      return (obj && isExist(obj, tail.join("."))) || false;
+      return (obj && isExist(obj, rest)) || false;
     }
     return true;
   };
@@ -166,19 +177,17 @@ const existParser = (type: string, filter: ExistFilter) => {
   ): TopologyNode[] => {
     if (target) {
       const targetSlice = target.split(".");
-      const [, ...tail] = targetSlice;
+      const rest = targetSlice.slice(1).join(".");
       if (targetSlice[0] === "$") {
-        obj = [...obj];
         let result: TopologyNode[] = [];
         for (const o of obj) {
-          result = result.concat(
-            getTargets(o, tail.join("."), type, namespace) || []
-          );
+          result = result.concat(getTargets(o, rest, type, namespace) || []);
         }
         return result;
       }
+
       obj = obj[targetSlice[0]];
-      return (obj && getTargets(obj, tail.join("."), type, namespace)) || [];
+      return (obj && getTargets(obj, rest, type, namespace)) || [];
     }
     return getFromCache(obj as string, TopologyNodeTypes[type], namespace);
   };
@@ -196,18 +205,19 @@ const matchParser = (type: string, filter: MatchFilter) => {
   const getLabel = (obj: any, match: string): { [keys: string]: string } => {
     if (match) {
       const matchSlice = match.split(".");
+      const rest = matchSlice.slice(1).join(".");
       obj = obj[matchSlice[0]];
-      const [, ...tail] = matchSlice;
-      return (obj && getLabel(obj, tail.join("."))) || false;
+      return (obj && getLabel(obj, rest)) || false;
     }
     return obj;
   };
 
   return (obj: TopologyNode): Result => {
     const label = getLabel(obj.detail, filter.match);
-    const targets = matchLabel(label, obj.namespace!.name).filter((t) =>
-      workloadTypes.has(t.nodeType)
-    );
+    const targets = matchLabel(
+      label,
+      new Set([obj.namespace!.name])
+    ).filter((t) => workloadTypes.has(t.nodeType));
     return { type: type, nodes: targets };
   };
 };

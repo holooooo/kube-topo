@@ -1,4 +1,4 @@
-import { intersection } from "../utils";
+import { intersectionSet } from "../utils";
 import { TopologyNode, TopologyNodeTypes, TopologyNodeType } from "../type";
 import { GroupConfig } from "@antv/g6/lib/types";
 
@@ -11,7 +11,7 @@ export let cache: { [key: string]: { [value: string]: Set<TopologyNode> } },
  *
  */
 export const initCache = () => {
-  cache = {};
+  cache = { ObjType: {} };
   Object.keys(TopologyNodeTypes).forEach((key) => {
     if (!cache.ObjType[key]) {
       cache.ObjType[key] = new Set();
@@ -72,7 +72,7 @@ export const getFromCache = (
  */
 export const matchLabel = (
   labels: { [keys: string]: string },
-  namespace?: string,
+  namespace?: Set<string>,
   type?: TopologyNodeType
 ): TopologyNode[] => {
   let setList: Set<TopologyNode>[] = [];
@@ -87,7 +87,7 @@ export const matchLabel = (
     setList.push(tempSet);
   }
 
-  return Array.from(intersection(setList))
-    .filter((n) => !namespace || n.namespace!.name === namespace)
+  return Array.from(intersectionSet(setList))
+    .filter((n) => !namespace || namespace.has(n.namespace!.name))
     .filter((n) => !type || n.nodeType === type);
 };
