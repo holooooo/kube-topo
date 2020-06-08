@@ -4,12 +4,13 @@ import { connect } from "react-redux";
 import G6 from "@antv/g6";
 import { Graph } from "@antv/g6/lib";
 import FloatBar from "./FloatBar";
-import { GroupConfig } from "@antv/g6/lib/types";
-import { ILayoutOptions } from "@antv/g6/lib/interface/graph";
-import { setLayout, setTopoDatas, setCanvas } from "../reducers/topology";
+import { GroupConfig, LayoutConfig } from "@antv/g6/lib/types";
+import { setLayout, setTopoData, setCanvas } from "../reducers/topology";
 import { initCache } from "../core";
+import MiniMap from "@antv/g6/lib/plugins/minimap";
+import Grid from "@antv/g6/lib/plugins/grid";
 
-export const LAYOUTS: { [key: string]: ILayoutOptions } = {
+export const LAYOUTS: { [key: string]: LayoutConfig } = {
   Force: {
     type: "force",
     linkDistance: 64,
@@ -51,6 +52,66 @@ export const LAYOUTS: { [key: string]: ILayoutOptions } = {
   },
 };
 
+const DEFAULT_CONFIG = {
+  animate: true,
+  fitView: true,
+  defaultNode: {
+    size: 64,
+    style: {
+      fill: "#f0f5ff",
+      stroke: "#adc6ff",
+      lineWidth: 2,
+    },
+    labelCfg: {
+      style: {
+        fill: "#1890ff",
+        fontSize: 24,
+        background: {
+          fill: "#ffffff",
+          stroke: "#9EC9FF",
+          padding: [2, 2, 2, 2],
+          radius: 2,
+        },
+      },
+    },
+  },
+  defaultEdge: {
+    // type: 'line',  // 在数据中已经指定 type，这里无需再次指定
+    style: {
+      lineWidth: 2,
+    },
+    labelCfg: {
+      position: "end",
+      refY: -10,
+    },
+  },
+  modes: {
+    default: [
+      "drag-canvas",
+      "zoom-canvas",
+      "drag-node",
+      "drag-group",
+      "collapse-expand-group",
+      "activate-relations",
+    ],
+  },
+
+  nodeStateStyles: {
+    active: {
+      opacity: 1,
+    },
+    inactive: {
+      opacity: 0.2,
+    },
+  },
+  edgeStateStyles: {
+    active: {
+      stroke: "#999",
+      lineWidth: 2,
+    },
+  },
+};
+
 export interface Props {
   nodes: TopologyNode[];
   edges: TopologyLink[];
@@ -59,116 +120,58 @@ export interface Props {
   width: number;
   layout: string;
   setLayout: typeof setLayout;
-  setTopoDatas: typeof setTopoDatas;
+  setTopoData: typeof setTopoData;
   setCanvas: typeof setCanvas;
 }
 export class Topology extends React.Component<Props> {
   private graphRef: React.RefObject<HTMLDivElement>;
-  private graph!: Graph;
+  private graph?: Graph;
+  private minimap?: MiniMap;
+  private grid?: Grid;
 
   constructor(props: Props) {
     super(props);
     this.graphRef = React.createRef();
+    this.graphUpdate();
   }
   componentDidMount = () => {
     window.onresize = this.handleResize;
     this.handleResize();
   };
 
-  renderGraph = () => {
-    if (!this.graphRef.current || !this.props.nodes.length) {
+  graphUpdate = () => {
+    if (!this.graphRef.current || !this.hasData) {
       return;
     }
 
-    const minimap = new G6.Minimap({
-      size: [100, 100],
-      className: "minimap",
-      type: "delegate",
-    });
-    const grid = new G6.Grid();
-    const { width, height } = this.props;
+    this.minimap =
+      this.minimap ||
+      new G6.Minimap({
+        size: [100, 100],
+        className: "minimap",
+        type: "delegate",
+      });
+    this.grid = this.grid || new G6.Grid();
 
-    const config = {
-      animate: true,
-      container: this.graphRef.current,
+    const { width, height, layout } = this.props;
+    const config = Object.assign({}, DEFAULT_CONFIG, {
       width,
       height,
-      fitView: true,
-      layout: LAYOUTS[this.props.layout],
-      defaultNode: {
-        size: 64,
-        style: {
-          fill: "#f0f5ff",
-          stroke: "#adc6ff",
-          lineWidth: 2,
-        },
-        labelCfg: {
-          style: {
-            fill: "#1890ff",
-            fontSize: 24,
-            background: {
-              fill: "#ffffff",
-              stroke: "#9EC9FF",
-              padding: [2, 2, 2, 2],
-              radius: 2,
-            },
-          },
-        },
-      },
-      defaultEdge: {
-        // type: 'line',  // 在数据中已经指定 type，这里无需再次指定
-        style: {
-          lineWidth: 2,
-        },
-        labelCfg: {
-          position: "end",
-          refY: -10,
-        },
-      },
-      modes: {
-        default: [
-          "drag-canvas",
-          "zoom-canvas",
-          "drag-node",
-          "drag-group",
-          "collapse-expand-group",
-          "activate-relations",
-          {
-            type: "tooltip",
-            formatText(model: any) {
-              const text =
-                "<strong>Name</strong>: " +
-                model.name +
-                "<br/> <strong>Type</strong>: " +
-                model.nodeType.name;
-              return text;
-            },
-          },
-        ],
-      },
-      plugins: [minimap, grid],
-      nodeStateStyles: {
-        active: {
-          opacity: 1,
-        },
-        inactive: {
-          opacity: 0.2,
-        },
-      },
-      edgeStateStyles: {
-        active: {
-          stroke: "#999",
-          lineWidth: 2,
-        },
-      },
-    };
-
+      layout: LAYOUTS[layout],
+      container: this.graphRef.current,
+      plugins: [this.minimap, this.grid],
+    });
     this.graph
       ? this.graph.changeSize(width, height).updateLayout(config)
       : (this.graph = new G6.Graph(config));
-    this.graph.read({ ...this.props });
+  };
 
-    this.graph.render();
+  renderGraph = () => {
+    this.graphUpdate();
+    if (this.graph) {
+      this.graph.read({ ...this.props });
+      this.graph.render();
+    }
   };
 
   handleResize = () => {
@@ -179,6 +182,8 @@ export class Topology extends React.Component<Props> {
   };
 
   handleSwitchLayout = (layout: string) => {
+    if (!this.graph) return;
+
     this.props.setLayout(layout);
     this.graph.updateLayout(LAYOUTS[layout]);
   };
@@ -186,9 +191,10 @@ export class Topology extends React.Component<Props> {
   handleClean = () => {
     // clean data
     initCache();
-    this.props.setTopoDatas({ nodes: [], links: [], groups: [] });
+    this.props.setTopoData({ nodes: [], links: [], groups: [] });
 
-    // clead graph view
+    // clean graph view
+    if (!this.graph) return;
     this.graph.clear();
     const plugs: any[] = this.graph.get("plugins");
     plugs.forEach((plug) => plug.destroy());
@@ -196,10 +202,12 @@ export class Topology extends React.Component<Props> {
     this.graph.get("modeController").destroy();
     this.graph.get("customGroupControll").destroy();
     this.graph.get("canvas").destroy();
+    this.minimap = null!;
+    this.grid = null!;
     this.graph = null!;
   };
 
-  get show() {
+  get hasData() {
     if (this.props.nodes.length) return true;
     return false;
   }
@@ -209,13 +217,11 @@ export class Topology extends React.Component<Props> {
     return (
       <>
         <div className="topology" ref={this.graphRef}></div>
-        {this.show && (
-          <>
-            <FloatBar
-              handleSwichLayout={this.handleSwitchLayout}
-              handleClean={this.handleClean}
-            />
-          </>
+        {this.hasData && (
+          <FloatBar
+            handleSwitchLayout={this.handleSwitchLayout}
+            handleClean={this.handleClean}
+          />
         )}
       </>
     );
@@ -235,7 +241,7 @@ const mapStateToProps = (state: StateStore) => {
 
 const mapDispatchToProps = {
   setLayout,
-  setTopoDatas,
+  setTopoData,
   setCanvas,
 };
 

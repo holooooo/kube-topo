@@ -15,7 +15,7 @@ const path = "topolopy/";
 const SET_LINKS = path + "setLinks";
 const SET_NODES = path + "setNodes";
 const SET_GROUPS = path + "setGroups";
-const SET_TOPODATAS = path + "setTopoDatas";
+const SET_TOPODATAS = path + "setTopoData";
 const SET_LAYOUT = path + "setLayout";
 const SET_CANVAS = path + "setCanvas";
 
@@ -29,7 +29,7 @@ export const setNodes = (nodes: TopologyNode[]) => {
 export const setGroups = (groups: GroupConfig[]) => {
   return { type: SET_GROUPS, groups };
 };
-export const setTopoDatas = (data: {
+export const setTopoData = (data: {
   nodes: TopologyNode[];
   links: TopologyLink[];
   groups: GroupConfig[];

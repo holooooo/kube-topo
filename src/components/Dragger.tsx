@@ -4,7 +4,7 @@ import { StateStore, TopologyNode, TopologyLink } from "../type";
 import { connect } from "react-redux";
 import { parse } from "../core/parse";
 import { setDragging, setLoading } from "../reducers/dragger";
-import { setTopoDatas } from "../reducers/topology";
+import { setTopoData } from "../reducers/topology";
 import { Layout, Spin, Card, Row, Col, message } from "antd";
 import { GroupConfig } from "@antv/g6/lib/types";
 
@@ -17,7 +17,7 @@ interface Props {
   isLoading: boolean;
   setDragging: typeof setDragging;
   setLoading: typeof setLoading;
-  setTopoDatas: typeof setTopoDatas;
+  setTopoData: typeof setTopoData;
 }
 class Dragger extends React.Component<Props> {
   drop: React.RefObject<any>;
@@ -93,7 +93,7 @@ class Dragger extends React.Component<Props> {
     groups: GroupConfig[]
   ) => {
     this.props.setLoading(false);
-    this.props.setTopoDatas({ nodes, links, groups });
+    this.props.setTopoData({ nodes, links, groups });
   };
 
   onUpload = (files: File[]) => {
@@ -153,7 +153,7 @@ const mapStateToProps = (state: StateStore) => {
 const mapDispatchToProps = {
   setDragging,
   setLoading,
-  setTopoDatas,
+  setTopoData,
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(Dragger);

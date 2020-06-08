@@ -9,7 +9,7 @@ import { LAYOUTS } from "./Topology";
 
 // tslint:disable-next-line:no-empty-interface
 export interface Props {
-  handleSwichLayout: (layout: string) => void;
+  handleSwitchLayout: (layout: string) => void;
   handleClean: () => void;
 }
 export class FloatBar extends React.Component<Props> {
@@ -23,7 +23,7 @@ export class FloatBar extends React.Component<Props> {
           <List.Item>
             <Button
               type="link"
-              onClick={() => this.props.handleSwichLayout(item)}
+              onClick={() => this.props.handleSwitchLayout(item)}
             >
               {item}
             </Button>
