@@ -40,33 +40,28 @@ export default class Workload extends React.Component<Props> {
         schedule.never.size !== 0 ||
         schedule.prefer.size !== 0 ||
         schedule.hate.size !== 0);
+    const panelCount = { count: 1 };
     return (
       <div>
         {isHomeless && <p>This Workload cannot be schedule to any node</p>}
         {hasContent && (
           <>
             <strong>Schedule: </strong>
-            <Collapse>
-              {hasContent &&
-                schedule.target.size &&
-                this.renderScheduleContent("only", schedule.target)}
-              {hasContent &&
-                schedule.never.size &&
-                this.renderScheduleContent("never", schedule.never)}
-              {hasContent &&
-                schedule.prefer.size &&
-                this.renderScheduleContent("prefer", schedule.prefer)}
-              {hasContent &&
-                schedule.hate.size &&
-                this.renderScheduleContent("hate", schedule.hate)}
-            </Collapse>
+            {this.renderScheduleContent("only", schedule.target, panelCount)}
+            {this.renderScheduleContent("never", schedule.never, panelCount)}
+            {this.renderScheduleContent("prefer", schedule.prefer, panelCount)}
+            {this.renderScheduleContent("hate", schedule.hate, panelCount)}
           </>
         )}
       </div>
     );
   };
 
-  renderScheduleContent = (status: string, content: Set<TopologyNode>) => {
+  renderScheduleContent = (
+    status: string,
+    content: Set<TopologyNode>,
+    panelCount: { count: number }
+  ) => {
     const nodeTips: string = `It will ${status} be schedule to those nodes.`;
     const podTips: string = `It will ${status} be schedule to the nodes which has this pods.`;
 
@@ -78,9 +73,9 @@ export default class Workload extends React.Component<Props> {
     );
 
     return (
-      <>
+      <Collapse defaultActiveKey={["1"]}>
         {nodes.length && (
-          <Panel header={nodeTips} key="1">
+          <Panel header={nodeTips} key={panelCount.count++}>
             <List
               itemLayout="horizontal"
               dataSource={nodes}
@@ -89,15 +84,15 @@ export default class Workload extends React.Component<Props> {
           </Panel>
         )}
         {pods.length && (
-          <Panel header={podTips} key="1">
+          <Panel header={podTips} key={panelCount.count++}>
             <List
               itemLayout="horizontal"
               dataSource={pods}
               renderItem={(item) => <List.Item>{item.name}</List.Item>}
-            />
+            />{" "}
           </Panel>
         )}
-      </>
+      </Collapse>
     );
   };
 

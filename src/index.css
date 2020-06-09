@@ -77,11 +77,11 @@ body {
 }
 
 .panel {
-  position: absolute!important;
-  width: 250px!important;
+  position: absolute !important;
+  width: 250px !important;
   left: -300px;
   top: -100px;
-  z-index: 2000!important;
+  z-index: 2000 !important;
   padding: 0;
 }
 
@@ -104,5 +104,9 @@ body {
 }
 
 .panel .ant-collapse-header {
-  padding: 5px;
+  font-size: 12px;
+}
+
+.panel .ant-list-item {
+  padding: 0px;
 }

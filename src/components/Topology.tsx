@@ -185,19 +185,36 @@ export class Topology extends React.Component<Props> {
     } else {
       this.graph = new G6.Graph(config);
       // binding tips panel
+      const showPanel = this.debounce(this.showPanel, 200);
       this.graph.on("node:mouseenter", (evt: IG6GraphEvent) => {
-        const { item } = evt;
-        const model = item!.getModel() as TopologyNode;
-        const { x, y } = model;
-        const point = this.graph!.getCanvasByPoint(x!, y!);
-        setNodeToolTip(point.x, point.y + 15);
-        setTargetNode(model);
+        showPanel(evt);
       });
 
       this.graph.on("node:mouseleave", () => {
         setNodeToolTip(-1000, -1000);
       });
     }
+  };
+
+  debounce = (func: Function, wait: number) => {
+    let timer: NodeJS.Timeout | undefined = undefined;
+    return (...args: any[]) => {
+      if (!timer) {
+        func(...args);
+        timer = setTimeout(() => {
+          timer = undefined;
+        }, wait);
+      }
+    };
+  };
+
+  showPanel = (evt: IG6GraphEvent) => {
+    const { item } = evt;
+    const model = item!.getModel() as TopologyNode;
+    const { x, y } = model;
+    const point = this.graph!.getCanvasByPoint(x!, y!);
+    this.props.setNodeToolTip(point.x, point.y + 15);
+    this.props.setTargetNode(model);
   };
 
   renderGraph = () => {
