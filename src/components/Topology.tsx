@@ -4,11 +4,18 @@ import { connect } from "react-redux";
 import G6 from "@antv/g6";
 import { Graph } from "@antv/g6/lib";
 import FloatBar from "./FloatBar";
-import { GroupConfig, LayoutConfig } from "@antv/g6/lib/types";
-import { setLayout, setTopoData, setCanvas } from "../reducers/topology";
+import { GroupConfig, LayoutConfig, IG6GraphEvent } from "@antv/g6/lib/types";
+import {
+  setLayout,
+  setTopoData,
+  setCanvas,
+  setNodeToolTip,
+  setTargetNode,
+} from "../reducers/topology";
 import { initCache } from "../core";
 import MiniMap from "@antv/g6/lib/plugins/minimap";
 import Grid from "@antv/g6/lib/plugins/grid";
+import Panel from "./panels/Panel";
 
 export const LAYOUTS: { [key: string]: LayoutConfig } = {
   Force: {
@@ -56,7 +63,7 @@ const DEFAULT_CONFIG = {
   animate: true,
   fitView: true,
   defaultNode: {
-    size: 64,
+    size: 32,
     style: {
       fill: "#f0f5ff",
       stroke: "#adc6ff",
@@ -65,7 +72,7 @@ const DEFAULT_CONFIG = {
     labelCfg: {
       style: {
         fill: "#1890ff",
-        fontSize: 24,
+        fontSize: 14,
         background: {
           fill: "#ffffff",
           stroke: "#9EC9FF",
@@ -91,7 +98,6 @@ const DEFAULT_CONFIG = {
       "zoom-canvas",
       "drag-node",
       "drag-group",
-      "collapse-expand-group",
       "activate-relations",
     ],
   },
@@ -119,9 +125,13 @@ export interface Props {
   height: number;
   width: number;
   layout: string;
+  nodeToolTipX: number;
+  nodeToolTipY: number;
   setLayout: typeof setLayout;
   setTopoData: typeof setTopoData;
   setCanvas: typeof setCanvas;
+  setNodeToolTip: typeof setNodeToolTip;
+  setTargetNode: typeof setTargetNode;
 }
 export class Topology extends React.Component<Props> {
   private graphRef: React.RefObject<HTMLDivElement>;
@@ -133,17 +143,23 @@ export class Topology extends React.Component<Props> {
     super(props);
     this.graphRef = React.createRef();
     this.graphUpdate();
-  }
-  componentDidMount = () => {
     window.onresize = this.handleResize;
     this.handleResize();
-  };
+  }
 
   graphUpdate = () => {
     if (!this.graphRef.current || !this.hasData) {
       return;
     }
 
+    const {
+      width,
+      height,
+      layout,
+      nodes,
+      setNodeToolTip,
+      setTargetNode,
+    } = this.props;
     this.minimap =
       this.minimap ||
       new G6.Minimap({
@@ -153,7 +169,6 @@ export class Topology extends React.Component<Props> {
       });
     this.grid = this.grid || new G6.Grid();
 
-    const { width, height, layout } = this.props;
     const config = Object.assign({}, DEFAULT_CONFIG, {
       width,
       height,
@@ -161,9 +176,28 @@ export class Topology extends React.Component<Props> {
       container: this.graphRef.current,
       plugins: [this.minimap, this.grid],
     });
-    this.graph
-      ? this.graph.changeSize(width, height).updateLayout(config)
-      : (this.graph = new G6.Graph(config));
+
+    // pre render panel component,avoid panel cannot get the height
+    setTargetNode(nodes[0]);
+
+    if (this.graph) {
+      this.graph.changeSize(width, height).updateLayout(config);
+    } else {
+      this.graph = new G6.Graph(config);
+      // binding tips panel
+      this.graph.on("node:mouseenter", (evt: IG6GraphEvent) => {
+        const { item } = evt;
+        const model = item!.getModel() as TopologyNode;
+        const { x, y } = model;
+        const point = this.graph!.getCanvasByPoint(x!, y!);
+        setNodeToolTip(point.x, point.y + 15);
+        setTargetNode(model);
+      });
+
+      this.graph.on("node:mouseleave", () => {
+        setNodeToolTip(-1000, -1000);
+      });
+    }
   };
 
   renderGraph = () => {
@@ -212,18 +246,28 @@ export class Topology extends React.Component<Props> {
     return false;
   }
 
+  shouldComponentUpdate(nextProps: Props) {
+    const differentNodes = this.props.nodes !== nextProps.nodes;
+    const differentLayout = this.props.layout !== nextProps.layout;
+    const differentHeight = this.props.height !== nextProps.height;
+    const differentWidth = this.props.width !== nextProps.width;
+    return (
+      differentNodes || differentLayout || differentHeight || differentWidth
+    );
+  }
+
   render() {
     this.renderGraph();
     return (
-      <>
-        <div className="topology" ref={this.graphRef}></div>
+      <div className="topology" ref={this.graphRef}>
+        <Panel></Panel>
         {this.hasData && (
           <FloatBar
             handleSwitchLayout={this.handleSwitchLayout}
             handleClean={this.handleClean}
           />
         )}
-      </>
+      </div>
     );
   }
 }
@@ -236,6 +280,8 @@ const mapStateToProps = (state: StateStore) => {
     layout: state.topology.layout,
     height: state.topology.height,
     width: state.topology.width,
+    nodeToolTipX: state.topology.nodeToolTipX,
+    nodeToolTipY: state.topology.nodeToolTipY,
   };
 };
 
@@ -243,6 +289,8 @@ const mapDispatchToProps = {
   setLayout,
   setTopoData,
   setCanvas,
+  setNodeToolTip,
+  setTargetNode,
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(Topology);

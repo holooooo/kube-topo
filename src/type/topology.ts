@@ -1,5 +1,5 @@
 import { NodeConfig, EdgeConfig } from "@antv/g6/lib/types";
-import { v4 as uuidv4 } from "uuid";
+import { v4 as uuid } from "uuid";
 import { fittingString } from "../utils";
 import { getFromCache } from "../core";
 import { Schedule } from ".";
@@ -76,13 +76,14 @@ export class TopologyNode implements NodeConfig {
   degree: number;
   detail?: { [key: string]: any };
   images?: string[];
-  labels?: { [keys: string]: string };
   name: string;
   namespace?: TopologyNode;
   nodeType: TopologyNodeType;
+  // TODO init resources
   resources?: Resources;
   schedule?: Schedule;
   selectors?: { [keys: string]: string };
+  status?: string;
   [key: string]: any;
 
   public constructor(
@@ -91,7 +92,7 @@ export class TopologyNode implements NodeConfig {
     namespace?: string,
     nodeType?: TopologyNodeType
   ) {
-    this.id = uuidv4();
+    this.id = uuid();
     this.name = name || obj.metadata.name;
     this.label = fittingString(this.name, 15);
     this.type = "image";
@@ -104,8 +105,6 @@ export class TopologyNode implements NodeConfig {
     )[0];
 
     this.nodeType = nodeType || TopologyNodeTypes[obj.kind];
-    this.labels =
-      (obj && (obj.metadata.labels as { [keys: string]: string })) || [];
     this.img = this.nodeType.icon;
     this.detail = obj;
 

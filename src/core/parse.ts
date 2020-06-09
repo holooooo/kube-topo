@@ -88,12 +88,13 @@ const parseTopologyNode = (obj: { [key: string]: any }) => {
   node = node ? Object.assign(node, temp) : temp;
 
   // save to cache
-  if (node.labels) {
-    for (let key of Object.keys(node.labels)) {
+  const labels = obj && (obj.metadata.labels as { [keys: string]: string });
+  if (labels) {
+    for (let key of Object.keys(labels)) {
       cache[key] = cache[key] || [];
-      cache[key][node.labels[key]] = (
-        cache[key][node.labels[key]] || new Set()
-      ).add(node);
+      cache[key][labels[key]] = (cache[key][labels[key]] || new Set()).add(
+        node
+      );
     }
   }
   cache.ObjType[node.nodeType.name].add(node);

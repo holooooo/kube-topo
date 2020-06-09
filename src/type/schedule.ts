@@ -9,8 +9,10 @@ export class Schedule {
   prefer: Set<TopologyNode>;
   // all the nodes that pod dont want to be schedule
   hate: Set<TopologyNode>;
+  hasHardRule: boolean;
 
   constructor() {
+    this.hasHardRule = false;
     this.hate = new Set();
     this.never = new Set();
     this.target = new Set();

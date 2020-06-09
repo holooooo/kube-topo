@@ -43,15 +43,14 @@ export const nodeSelect = () => {
   workloads.forEach((workload) => {
     let schedule: Schedule = new Schedule();
     const detail = workload.detail!.spec.template || workload.detail!;
-    console.log(detail);
     if (detail.spec.nodeName) {
       // TODO alert target node has taint scene
       // nodename ignore taint, but cant real run in taint node.
       schedule.target = new Set([
         getFromCache(detail.spec.nodeName, TopologyNodeTypes.Node)[0],
       ]);
+      schedule.hasHardRule = true;
       workload.schedule = schedule;
-      console.log(workload.schedule);
       return;
     }
 
@@ -79,6 +78,7 @@ export const nodeSelect = () => {
         new Set(matchLabel(nodeSelector, undefined, TopologyNodeTypes.Node)),
         schedule.never,
       ]);
+      schedule.hasHardRule = true;
     }
 
     // FIXME this is shit
@@ -93,6 +93,7 @@ export const nodeSelect = () => {
         aft.nodeAffinity.requiredDuringSchedulingRequiredDuringExecution
           ?.nodeSelectorTerms || [];
       const hardTerms = [...hit, ...hrt];
+      if (hardTerms.length > 0) schedule.hasHardRule = true;
       let srs: SelectorRequirement[] = [];
       hardTerms.forEach((terms) => {
         srs = srs.concat(terms.matchExpressions || terms.matchFields || []);
@@ -112,6 +113,8 @@ export const nodeSelect = () => {
       const hrt =
         aft.podAffinity.requiredDuringSchedulingRequiredDuringExecution || [];
       const hardTerms = [...hit, ...hrt];
+      // FIXME pod should has another flag
+      if (hardTerms.length > 0) schedule.hasHardRule = true;
 
       const sit =
         aft.podAffinity.preferredDuringSchedulingIgnoredDuringExecution || [];
@@ -129,6 +132,8 @@ export const nodeSelect = () => {
         aft.podAntiAffinity.requiredDuringSchedulingRequiredDuringExecution ||
         [];
       const hardTerms = [...hit, ...hrt];
+      // FIXME pod should has another flag
+      if (hardTerms.length > 0) schedule.hasHardRule = true;
 
       const sit =
         aft.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution ||
@@ -144,7 +149,6 @@ export const nodeSelect = () => {
     // TODO podNodeSelectorPluginConfig NodeRestriction plugin
     // merge result to instance
     workload.schedule = schedule;
-    console.log(workload.schedule);
   });
 };
 
@@ -257,8 +261,6 @@ const selectBySelector = (
       resultTarget = resultNever;
       resultNever = temp;
     }
-
-    console.log(nodes);
 
     Object.keys(nodes).forEach((key) => {
       const rightTypeNodes = new Set(

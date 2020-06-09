@@ -9,15 +9,20 @@ const initTopologyNodesState = {
   layout: "Concentric",
   height: 0,
   width: 0,
+  nodeToolTipX: -1000,
+  nodeToolTipY: -1000,
+  targetNode: undefined,
 } as TopologyState;
 
-const path = "topolopy/";
+const path = "topology/";
 const SET_LINKS = path + "setLinks";
 const SET_NODES = path + "setNodes";
 const SET_GROUPS = path + "setGroups";
-const SET_TOPODATAS = path + "setTopoData";
+const SET_TOPODATA = path + "setTopoData";
 const SET_LAYOUT = path + "setLayout";
 const SET_CANVAS = path + "setCanvas";
+const SET_NODE_TOOL_TIP = path + "setNodeToolTip";
+const SET_TARGET_NODE = path + "setShowNodeToolTip";
 
 export const setLinks = (links: TopologyLink[]) => {
   return { type: SET_LINKS, links };
@@ -34,13 +39,20 @@ export const setTopoData = (data: {
   links: TopologyLink[];
   groups: GroupConfig[];
 }) => {
-  return { type: SET_TOPODATAS, ...data };
+  return { type: SET_TOPODATA, ...data };
 };
 export const setLayout = (layout: string) => {
   return { type: SET_LAYOUT, layout };
 };
 export const setCanvas = (width: number, height: number) => {
   return { type: SET_CANVAS, width, height };
+};
+
+export const setNodeToolTip = (nodeToolTipX: number, nodeToolTipY: number) => {
+  return { type: SET_NODE_TOOL_TIP, nodeToolTipX, nodeToolTipY };
+};
+export const setTargetNode = (targetNode: TopologyNode) => {
+  return { type: SET_TARGET_NODE, targetNode };
 };
 
 const topology = (
@@ -63,7 +75,7 @@ const topology = (
         ...state,
         groups: action.groups,
       };
-    case SET_TOPODATAS:
+    case SET_TOPODATA:
       return {
         ...state,
         links: action.links,
@@ -81,6 +93,14 @@ const topology = (
         width: action.width,
         height: action.height,
       };
+    case SET_NODE_TOOL_TIP:
+      return {
+        ...state,
+        nodeToolTipX: action.nodeToolTipX,
+        nodeToolTipY: action.nodeToolTipY,
+      };
+    case SET_TARGET_NODE:
+      return { ...state, targetNode: action.targetNode };
     default:
       return state;
   }

@@ -14,6 +14,9 @@ export interface TopologyState {
   layout: string;
   width: number;
   height: number;
+  targetNode?: TopologyNode;
+  nodeToolTipX: number;
+  nodeToolTipY: number;
 }
 
 export interface DraggerState {
