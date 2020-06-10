@@ -76,6 +76,7 @@ export class TopologyNode implements NodeConfig {
   degree: number;
   detail?: { [key: string]: any };
   images?: string[];
+  labels?: { [key: string]: string };
   name: string;
   namespace?: TopologyNode;
   nodeType: TopologyNodeType;
@@ -106,16 +107,12 @@ export class TopologyNode implements NodeConfig {
 
     this.nodeType = nodeType || TopologyNodeTypes[obj.kind];
     this.img = this.nodeType.icon;
-    this.detail = obj;
-
     this.groupId = (this.namespace && this.namespace.id) || "cluster";
     this.degree = this.nodeType.degree;
     this.annotations =
       (obj && (obj.metadata.annotations as { [keys: string]: string })) || [];
 
-    if (!obj) {
-      return;
-    }
+    if (!obj) return;
 
     //TODO ugly
     // Special resource handling
@@ -127,6 +124,14 @@ export class TopologyNode implements NodeConfig {
       (obj.spec.template.spec.containers as any[]).forEach((container) =>
         this.images?.push(container.image)
       );
+      this.labels = obj.metadata.labels;
+      if (obj.spec.template.metadata.labels) {
+        this.labels = Object.assign(
+          {},
+          this.labels || {},
+          obj.spec.template.metadata.labels
+        );
+      }
     } else if (this.nodeType === TopologyNodeTypes.Service) {
       this.selectors = obj.spec.selector;
     } else if (
@@ -141,6 +146,8 @@ export class TopologyNode implements NodeConfig {
       this.status =
         obj.status.conditions[obj.status.conditions.length - 1].type;
     }
+
+    this.detail = obj;
   }
 }
 

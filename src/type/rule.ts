@@ -4,7 +4,7 @@ export interface ExistFilter {
   exist: string;
   // can use $ to loop through list
   target: string;
-  type: string;
+  nodeType: string;
 }
 
 export interface MatchFilter {

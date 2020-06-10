@@ -10,33 +10,20 @@ rules:
       - StatefulSet
     filters:
       - exist: spec.template.spec.volumes
-        target: spec.template.spec.volumes.$.secretName
-        type: Secret
+        target: spec.template.spec.volumes.$.secret.secretName
+        nodeType: Secret
       - exist: spec.template.spec.volumes
-        target: spec.template.spec.volumes.$.name
-        type: ConfigMap
-      - exist: spec.template.spec.volumes.PersistentVolumeClaim
-        target: spec.template.spec.volumes.claimName
-        type: PersistentVolumeClaim
+        target: spec.template.spec.volumes.$.configMap.name
+        nodeType: ConfigMap
+      - exist: spec.template.spec.volumes
+        target: spec.template.spec.volumes.$.PersistentVolumeClaim.claimName
+        nodeType: PersistentVolumeClaim
       - exist: spec.template.spec.containers
-        target: spec.template.spec.containers.$.envFrom.$.configMapRef
-        type: ConfigMap
+        target: spec.template.spec.containers.$.envFrom.$.configMapRef.name
+        nodeType: ConfigMap
       - exist: spec.template.spec.containers
-        target: spec.template.spec.containers.$.envFrom.$.secretRef
-        type: Secret
-  - type: Reference
-    nodeTypes:
-      - Service
-    filters:
-      - match: spec.selector
-        nodeTypes:
-          - CronJob
-          - DaemonSet
-          - Deployment
-          - Job
-          - ReplicaSet
-          - ReplicationController
-          - StatefulSet
+        target: spec.template.spec.containers.$.envFrom.$.secretRef.name
+        nodeType: Secret
   - type: Reference
     nodeTypes:
       - StatefulSet
@@ -44,3 +31,26 @@ rules:
       - exist: spec.volumeClaimTemplates
         target: spec.volumeClaimTemplates.$.storageClassName
         nodeTypes: StorageClass
+  - type: Expose
+    nodeTypes:
+      - Service
+    filters:
+      - match: spec.selector
+        type:
+          - CronJob
+          - DaemonSet
+          - Deployment
+          - Job
+          - ReplicaSet
+          - ReplicationController
+          - StatefulSet
+  - type: Expose
+    nodeTypes:
+      - Ingress
+    filters:
+      - exist: spec.rules
+        target: spec.rules.$.http.paths.$.backend.serviceName
+        nodeType: Service
+      - exist: spec.rules
+        target: spec.backend.serviceName
+        nodeType: Service

@@ -55,16 +55,11 @@ class Dragger extends React.Component<Props> {
       return;
     }
     const files = [...e.dataTransfer.files];
-    const formats = ["yaml", "yml"];
+    const formats = new Set(["yaml", "yml"]);
 
     if (
-      formats &&
-      files.some(
-        (file) =>
-          !formats.some((format) =>
-            file.name.toLowerCase().endsWith(format.toLowerCase())
-          )
-      )
+      formats.size &&
+      files.some((file) => !formats.has(file.name.split(".").pop()!))
     ) {
       message.error("This is only support *.yml or *.yaml");
       return;

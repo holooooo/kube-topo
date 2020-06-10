@@ -88,7 +88,7 @@ const parseTopologyNode = (obj: { [key: string]: any }) => {
   node = node ? Object.assign(node, temp) : temp;
 
   // save to cache
-  const labels = obj && (obj.metadata.labels as { [keys: string]: string });
+  const labels = node.labels;
   if (labels) {
     for (let key of Object.keys(labels)) {
       cache[key] = cache[key] || [];
@@ -197,7 +197,12 @@ const existParser = (type: string, filter: ExistFilter) => {
     if (!isExist(obj.detail!, filter.exist)) return { type: type, nodes: [] };
     return {
       type: type,
-      nodes: getTargets(obj, filter.target, filter.type, obj.namespace!.name),
+      nodes: getTargets(
+        obj.detail,
+        filter.target,
+        filter.nodeType,
+        obj.namespace!.name
+      ),
     };
   };
 };

@@ -62,8 +62,8 @@ export default class Workload extends React.Component<Props> {
     content: Set<TopologyNode>,
     panelCount: { count: number }
   ) => {
-    const nodeTips: string = `It will ${status} be schedule to those nodes.`;
-    const podTips: string = `It will ${status} be schedule to the nodes which has this pods.`;
+    const nodeTips: string = `It will ${status} be scheduled to the following nodes.`;
+    const podTips: string = `It will ${status} be scheduled to the nodes which has following pods.`;
 
     const nodes: TopologyNode[] = Array.from(content).filter(
       (node) => node.nodeType === TopologyNodeTypes.Node

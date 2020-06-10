@@ -72,7 +72,7 @@ const DEFAULT_CONFIG = {
     labelCfg: {
       style: {
         fill: "#1890ff",
-        fontSize: 14,
+        fontSize: 8,
         background: {
           fill: "#ffffff",
           stroke: "#9EC9FF",
