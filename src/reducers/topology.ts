@@ -12,6 +12,8 @@ const initTopologyNodesState = {
   nodeToolTipX: -1000,
   nodeToolTipY: -1000,
   targetNode: undefined,
+  menuX: -1000,
+  menuY: -1000,
 } as TopologyState;
 
 const path = "topology/";
@@ -22,7 +24,8 @@ const SET_TOPODATA = path + "setTopoData";
 const SET_LAYOUT = path + "setLayout";
 const SET_CANVAS = path + "setCanvas";
 const SET_NODE_TOOL_TIP = path + "setNodeToolTip";
-const SET_TARGET_NODE = path + "setShowNodeToolTip";
+const SET_MENU = path + "setMenu";
+const SET_TARGET_NODE = path + "setTargetNode";
 
 export const setLinks = (links: TopologyLink[]) => {
   return { type: SET_LINKS, links };
@@ -51,7 +54,10 @@ export const setCanvas = (width: number, height: number) => {
 export const setNodeToolTip = (nodeToolTipX: number, nodeToolTipY: number) => {
   return { type: SET_NODE_TOOL_TIP, nodeToolTipX, nodeToolTipY };
 };
-export const setTargetNode = (targetNode: TopologyNode) => {
+export const setMenu = (menuX: number, menuY: number) => {
+  return { type: SET_MENU, menuX, menuY };
+};
+export const setTargetNode = (targetNode?: TopologyNode) => {
   return { type: SET_TARGET_NODE, targetNode };
 };
 
@@ -98,6 +104,12 @@ const topology = (
         ...state,
         nodeToolTipX: action.nodeToolTipX,
         nodeToolTipY: action.nodeToolTipY,
+      };
+    case SET_MENU:
+      return {
+        ...state,
+        menuX: action.menuX,
+        menuY: action.menuY,
       };
     case SET_TARGET_NODE:
       return { ...state, targetNode: action.targetNode };

@@ -2,6 +2,7 @@ const {
   override,
   fixBabelImports,
   addWebpackPlugin,
+  useBabelRc,
 } = require("customize-cra");
 const fs = require("fs");
 const YAML = require("yaml");
@@ -20,5 +21,6 @@ module.exports = override(
     new DefinePlugin({
       "process.env": { RULES: rules },
     })
-  )
+  ),
+  useBabelRc(),
 );

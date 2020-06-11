@@ -1,8 +1,10 @@
 import React from "react";
 import { TopologyNode, StateStore, workloadTypes } from "../../type";
-import { Card } from "antd";
+import { Card, Button } from "antd";
 import { connect } from "react-redux";
 import Workload from "./components/Workload";
+import { CloseOutlined } from "@ant-design/icons";
+import { setNodeToolTip } from "../../reducers/topology";
 
 export interface Props {
   node?: TopologyNode;
@@ -10,6 +12,7 @@ export interface Props {
   nodeToolTipY: number;
   height: number;
   width: number;
+  setNodeToolTip: typeof setNodeToolTip;
 }
 export class Panel extends React.Component<Props> {
   private cardRef: React.RefObject<HTMLDivElement>;
@@ -39,11 +42,9 @@ export class Panel extends React.Component<Props> {
     return nodeToolTipY + 15;
   }
 
-  shouldComponentUpdate(nextProps: Props) {
-    const differentHeight = this.props.nodeToolTipY !== nextProps.nodeToolTipY;
-    const differentNode = this.props.node !== nextProps.node;
-    return differentHeight || differentNode;
-  }
+  handelClose = () => {
+    this.props.setNodeToolTip(-1000, -1000);
+  };
 
   render = () => {
     const { node } = this.props;
@@ -54,6 +55,11 @@ export class Panel extends React.Component<Props> {
             title={node.nodeType.name}
             className="panel"
             style={{ top: `${this.y}px`, left: `${this.x}px` }}
+            extra={
+              <Button type="link" onClick={this.handelClose}>
+                <CloseOutlined style={{ color: "#000" }} />
+              </Button>
+            }
           >
             <p>
               <strong>Name: </strong>
@@ -88,6 +94,8 @@ const mapStateToProps = (state: StateStore) => {
   };
 };
 
-const mapDispatchToProps = {};
+const mapDispatchToProps = {
+  setNodeToolTip,
+};
 
 export default connect(mapStateToProps, mapDispatchToProps)(Panel);

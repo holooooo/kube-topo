@@ -11,11 +11,13 @@ import {
   setCanvas,
   setNodeToolTip,
   setTargetNode,
+  setMenu,
 } from "../reducers/topology";
 import { initCache } from "../core";
 import MiniMap from "@antv/g6/lib/plugins/minimap";
 import Grid from "@antv/g6/lib/plugins/grid";
 import Panel from "./panels/Panel";
+import Menu from "./menus/Menu";
 
 export const LAYOUTS: { [key: string]: LayoutConfig } = {
   Force: {
@@ -93,13 +95,7 @@ const DEFAULT_CONFIG = {
     },
   },
   modes: {
-    default: [
-      "drag-canvas",
-      "zoom-canvas",
-      "drag-node",
-      "drag-group",
-      "activate-relations",
-    ],
+    default: ["drag-canvas", "zoom-canvas", "drag-node", "activate-relations"],
   },
 
   nodeStateStyles: {
@@ -131,6 +127,7 @@ export interface Props {
   setTopoData: typeof setTopoData;
   setCanvas: typeof setCanvas;
   setNodeToolTip: typeof setNodeToolTip;
+  setMenu: typeof setMenu;
   setTargetNode: typeof setTargetNode;
 }
 export class Topology extends React.Component<Props> {
@@ -147,6 +144,10 @@ export class Topology extends React.Component<Props> {
     this.handleResize();
   }
 
+  componentDidMount() {
+    this.props.setTargetNode(this.props.nodes[0]);
+  }
+
   graphUpdate = () => {
     if (!this.graphRef.current || !this.hasData) {
       return;
@@ -159,6 +160,7 @@ export class Topology extends React.Component<Props> {
       nodes,
       setNodeToolTip,
       setTargetNode,
+      setMenu,
     } = this.props;
     this.minimap =
       this.minimap ||
@@ -185,36 +187,35 @@ export class Topology extends React.Component<Props> {
     } else {
       this.graph = new G6.Graph(config);
       // binding tips panel
-      const showPanel = this.debounce(this.showPanel, 200);
+      this.props.setTargetNode(nodes[0]);
       this.graph.on("node:mouseenter", (evt: IG6GraphEvent) => {
-        showPanel(evt);
+        const { item } = evt;
+        const model = item!.getModel() as TopologyNode;
+        const { x, y } = model;
+        const point = this.graph!.getCanvasByPoint(x!, y!);
+        this.props.setTargetNode(model);
+        this.props.setNodeToolTip(point.x, point.y);
       });
 
       this.graph.on("node:mouseleave", () => {
         setNodeToolTip(-1000, -1000);
+        setMenu(-1000, -1000);
+      });
+
+      this.graph.on("node:contextmenu", (evt: IG6GraphEvent) => {
+        const { item } = evt;
+        const model = item!.getModel() as TopologyNode;
+        const { x, y } = model;
+        const point = this.graph!.getCanvasByPoint(x!, y!);
+        setTargetNode(model);
+        setMenu(point.x, point.y);
+        setNodeToolTip(-1000, -1000);
+      });
+      this.graph.on("click", () => {
+        setNodeToolTip(-1000, -1000);
+        setMenu(-1000, -1000);
       });
     }
-  };
-
-  debounce = (func: Function, wait: number) => {
-    let timer: NodeJS.Timeout | undefined = undefined;
-    return (...args: any[]) => {
-      if (!timer) {
-        func(...args);
-        timer = setTimeout(() => {
-          timer = undefined;
-        }, wait);
-      }
-    };
-  };
-
-  showPanel = (evt: IG6GraphEvent) => {
-    const { item } = evt;
-    const model = item!.getModel() as TopologyNode;
-    const { x, y } = model;
-    const point = this.graph!.getCanvasByPoint(x!, y!);
-    this.props.setNodeToolTip(point.x, point.y + 15);
-    this.props.setTargetNode(model);
   };
 
   renderGraph = () => {
@@ -243,6 +244,9 @@ export class Topology extends React.Component<Props> {
     // clean data
     initCache();
     this.props.setTopoData({ nodes: [], links: [], groups: [] });
+    this.props.setTargetNode(undefined);
+    this.props.setNodeToolTip(-1000, -1000);
+    this.props.setMenu(-1000, -1000);
 
     // clean graph view
     if (!this.graph) return;
@@ -277,7 +281,8 @@ export class Topology extends React.Component<Props> {
     this.renderGraph();
     return (
       <div className="topology" ref={this.graphRef}>
-        <Panel></Panel>
+        <Panel />
+        <Menu />
         {this.hasData && (
           <FloatBar
             handleSwitchLayout={this.handleSwitchLayout}
@@ -308,6 +313,7 @@ const mapDispatchToProps = {
   setCanvas,
   setNodeToolTip,
   setTargetNode,
+  setMenu,
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(Topology);
