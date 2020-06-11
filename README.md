@@ -2,6 +2,8 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 ## Available Scripts
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/c605707bd3ca4aeca027aa0cf97d678c)](https://app.codacy.com/manual/Okabe-Kurisu/kube-topo?utm_source=github.com&utm_medium=referral&utm_content=Okabe-Kurisu/kube-topo&utm_campaign=Badge_Grade_Dashboard)
+
 In the project directory, you can run:
 
 ### `yarn start`
