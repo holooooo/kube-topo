@@ -7,9 +7,7 @@
 
 一个用来将 Yaml 文件中的拓扑关系可视化的工具。欢迎各位提 Issue、PR 来帮助这个工具发展的更好。
 
-**线上 Demo**
-
-> http://topo.dalaocarryme.com
+体验**线上 Demo**[点这](http://topo.dalaocarryme.com)
 
 ## 使用方法
 

@@ -16,16 +16,15 @@ export interface Props {
 
 export interface States {
   YamlModelVisble: boolean;
-  Yaml: string;
 }
 export class Menu extends React.Component<Props, States> {
   private cardRef: React.RefObject<HTMLDivElement>;
   private codeRef: React.RefObject<HTMLPreElement>;
+  private yaml: string = "";
   private isYamlViewerIniting: boolean = false;
   private isYamlViewerInited: boolean = false;
   state = {
     YamlModelVisble: false,
-    Yaml: "",
   };
 
   constructor(props: Props) {
@@ -36,16 +35,15 @@ export class Menu extends React.Component<Props, States> {
 
   componentDidMount() {
     this.highlight();
+    // because prism render need a exist code dom. but antd modal cannot pre renden the dom in child, so ...
+    this.isYamlViewerIniting = true;
+    this.setState({ YamlModelVisble: true });
   }
 
   componentDidUpdate() {
     this.highlight();
 
-    // because prism render need a exist code dom. but antd modal cannot pre renden the dom in child, so ...
-    if (!this.isYamlViewerIniting) {
-      this.isYamlViewerIniting = true;
-      this.setState({ YamlModelVisble: true });
-    } else if (
+    if (
       this.state.YamlModelVisble &&
       this.isYamlViewerIniting &&
       !this.isYamlViewerInited
@@ -89,13 +87,9 @@ export class Menu extends React.Component<Props, States> {
       return;
     }
 
+    this.yaml = YAML.stringify(this.props.node?.detail) || "";
     this.setState({
       YamlModelVisble: true,
-      Yaml: "",
-    });
-    const yaml = YAML.stringify(this.props.node?.detail) || "";
-    this.setState({
-      Yaml: yaml,
     });
   };
   handleCloseViewYaml = () => {
@@ -104,9 +98,8 @@ export class Menu extends React.Component<Props, States> {
 
   render = () => {
     const { node } = this.props;
-    const { YamlModelVisble, Yaml } = this.state;
-    const { handleCloseViewYaml, handleViewYaml, x, y } = this;
-    console.log(1);
+    const { YamlModelVisble } = this.state;
+    const { handleCloseViewYaml, handleViewYaml, yaml, x, y } = this;
     return (
       <div ref={this.cardRef}>
         {node && (
@@ -124,13 +117,14 @@ export class Menu extends React.Component<Props, States> {
           okButtonProps={{ style: { display: "none" } }}
           cancelText="Close"
           onCancel={handleCloseViewYaml}
+          mask={this.isYamlViewerInited}
           style={{
             visibility: this.isYamlViewerInited ? "visible" : "hidden",
           }}
         >
           <pre lang="yaml" className="line-number">
             <code ref={this.codeRef} className="language-yaml">
-              {Yaml}
+              {yaml}
             </code>
           </pre>
         </Modal>
